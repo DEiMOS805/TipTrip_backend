@@ -3,11 +3,11 @@ from flask import make_response, jsonify
 
 from app import app, api, auth
 from app.endpoints.get_record import GetRecord
-from app.endpoints.get_all_records import GetAllRecords
+from app.endpoints.get_demo_data import GetDemoData
 
 
 api.add_resource(GetRecord, "/get_record")
-api.add_resource(GetAllRecords, "/get_all_records")
+api.add_resource(GetDemoData, "/get_demo_data")
 
 
 @app.route('/')

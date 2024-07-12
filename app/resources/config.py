@@ -12,3 +12,6 @@ DB_DATA: dict = {
 }
 
 GENERAL_ERROR_MESSAGE: str = "Ocurrió un problema mientras se procesaba la petición"
+
+API_USERNAME: str = "admin"
+API_PASSWORD: str = "admin"

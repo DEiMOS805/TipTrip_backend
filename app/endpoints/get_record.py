@@ -1,10 +1,8 @@
 from logging import getLogger
+from sqlalchemy.engine.base import Engine
+
 from flask_restful import Resource
 from flask import request, make_response, jsonify
-
-from sqlalchemy import select, Table
-from sqlalchemy.engine.base import Engine
-from sqlalchemy.sql.schema import MetaData
 
 from app import auth
 from app.resources.functions import *
@@ -22,40 +20,26 @@ class GetRecord(Resource):
 		request_data = request.get_json()
 
 		logger.info("Checking request data...")
-		if not "table_name" in request_data:
-			raise TypeError("table_name")
+		if not "place_name" in request_data:
+			raise TypeError("place_name")
 		else:
-			table_name = request_data["table_name"]
+			place_name = request_data["place_name"]
 
-		if not isinstance(table_name, str):
-			raise KeyError("table_name")
+		if not isinstance(place_name, str):
+			raise KeyError("place_name")
 
-		if not "conditions" in request_data:
-			raise TypeError("conditions")
-		else:
-			conditions = request_data["conditions"]
-
-		if not isinstance(request_data["conditions"], dict):
-			raise KeyError("conditions")
-
-		#! CHECH THAT request_data["conditions"] IS NOT EMPTY
+		logger.debug(f"Param (place_name) value: {place_name}")
 
 		logger.info("Processing request...")
 		logger.info("Connecting to DB...")
 		engine: Engine = get_db_engine(**DB_DATA)
-		metadata: MetaData = get_db_metadata()
 
 		try:
-			logger.info("Connecting to table...")
-			table = Table(table_name, metadata, autoload_with=engine)
+			logger.info("Making consult...")
+			query = get_place_full_data_query(engine, place_name)
 
 			with engine.connect() as connection:
 				with connection.begin() as transaction:
-					logger.info("Making consult...")
-					query = select(table)
-					for column, value in conditions.items():
-						query = query.where(table.c[column] == value)
-
 					data: list = connection.execute(query).fetchall()
 
 					# data = [list(row) for row in data]
@@ -66,7 +50,7 @@ class GetRecord(Resource):
 
 		response: dict = {
 			"status": "Correct",
-			"data": data
+			"data": data[0]
 		}
 
 		return make_response(jsonify(response), 200)

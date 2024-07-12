@@ -59,17 +59,17 @@ def type_error_handler(error: TypeError) -> dict:
             message="Missing request data field: 'table_name'",
             http_code=400
         )
-    return make_error_response("00500", GENERAL_ERROR_MESSAGE, 500)
+    # return make_error_response("00500", GENERAL_ERROR_MESSAGE, 500)
 
 @app.errorhandler(HTTPException)
 def not_found_error_handler(error: HTTPException) -> dict:
     """ Function that handles the error 404 """
     return make_error_response("00404", str(error), 404)
 
-@app.errorhandler(Exception)
-def exception_error_handler(error: Exception) -> dict:
-    """ Function that handles general Exception errors """
-    return make_error_response("00500", GENERAL_ERROR_MESSAGE, 500)
+# @app.errorhandler(Exception)
+# def exception_error_handler(error: Exception) -> dict:
+#     """ Function that handles general Exception errors """
+#     return make_error_response("00500", GENERAL_ERROR_MESSAGE, 500)
 
 
 # @app.errorhandler(KeyError)
