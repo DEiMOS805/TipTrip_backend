@@ -1,17 +1,20 @@
 from flask.wrappers import Response
 from flask import make_response, jsonify
+from flask_jwt_extended import jwt_required
 
-from app import app, api, auth
+from app import app, api
+from app.endpoints.auth import Auth
 from app.endpoints.get_record import GetRecord
 from app.endpoints.get_demo_data import GetDemoData
 
 
+api.add_resource(Auth, "/auth")
 api.add_resource(GetRecord, "/get_record")
 api.add_resource(GetDemoData, "/get_demo_data")
 
 
 @app.route('/')
-@auth.login_required
+@jwt_required()
 def home() -> dict:
 	""" Home route """
 	response: dict = {

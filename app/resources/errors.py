@@ -12,26 +12,29 @@ Other errors (00500)
 00501 => Internal server error
 """
 
+from logging import getLogger
 from flask import make_response, jsonify
 from werkzeug.exceptions import HTTPException
 
 from app import app
-from app.resources.config import GENERAL_ERROR_MESSAGE
+from app.resources.config import PROJECT_NAME, GENERAL_ERROR_MESSAGE
 
 
-def get_error_code(message: str) -> int:
-    """ Function to return a internal API error code based on a given message """
-    if message == "":
-        return 400
-    elif message == "":
-        return 401
+logger = getLogger(f"{PROJECT_NAME}.error_manager")
 
 
-def make_error_response(error_code: str, message: str, http_code: int) -> dict:
+# def get_error_code(message: str) -> int:
+#     """ Function to return a internal API error code based on a given message """
+#     if message == "":
+#         return 400
+#     elif message == "":
+#         return 401
+
+
+def make_error_response(message: str, http_code: int) -> dict:
     """ Function to return each error with the same format """
     response: dict = {
         "status": "Failed",
-        "error_code": error_code,
         "error_message": message
     }
     return make_response(jsonify(response), http_code)
@@ -40,11 +43,17 @@ def make_error_response(error_code: str, message: str, http_code: int) -> dict:
 @app.errorhandler(KeyError)
 def key_error_handler(error: KeyError) -> dict:
     """ Function to handle KeyError errors """
+    error = str(error)
 
-    if "table_name" in str(error):
+    if not any(
+        f"'{key}'" == error for key in
+        ["table_name", "place_name", "email", "password"]
+    ):
+        logger.error(error)
+        return make_error_response(GENERAL_ERROR_MESSAGE, http_code=500)
+    else:
         return make_error_response(
-            error_code="00400",
-            message="Data field (table_name) has the wrong data type (str)",
+            message=f"Missing request data field: {error}",
             http_code=400
         )
 
@@ -52,24 +61,29 @@ def key_error_handler(error: KeyError) -> dict:
 @app.errorhandler(TypeError)
 def type_error_handler(error: TypeError) -> dict:
     """ Function to handle TypeError errors """
+    error = str(error)
 
-    if "table_name" in str(error):
+    if not any(
+        f"'{key}'" == error for key in
+        ["table_name", "place_name", "email", "password"]
+    ):
+        logger.error(error)
+        return make_error_response(GENERAL_ERROR_MESSAGE, http_code=500)
+    else:
         return make_error_response(
-            error_code="00400",
-            message="Missing request data field: 'table_name'",
+            message=f"Data field ({error}) has the wrong data type (str)",
             http_code=400
         )
-    # return make_error_response("00500", GENERAL_ERROR_MESSAGE, 500)
 
 @app.errorhandler(HTTPException)
 def not_found_error_handler(error: HTTPException) -> dict:
     """ Function that handles the error 404 """
     return make_error_response("00404", str(error), 404)
 
-# @app.errorhandler(Exception)
-# def exception_error_handler(error: Exception) -> dict:
-#     """ Function that handles general Exception errors """
-#     return make_error_response("00500", GENERAL_ERROR_MESSAGE, 500)
+@app.errorhandler(Exception)
+def exception_error_handler(error: Exception) -> dict:
+    """ Function that handles general Exception errors """
+    return make_error_response("00500", GENERAL_ERROR_MESSAGE, 500)
 
 
 # @app.errorhandler(KeyError)

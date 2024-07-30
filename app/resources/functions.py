@@ -1,40 +1,33 @@
+import os
+from dotenv import load_dotenv
+
 from sqlalchemy import case
 from sqlalchemy.sql import func, select
 from sqlalchemy.sql.selectable import Subquery, Alias
 from sqlalchemy.sql.schema import MetaData as MetaDataType
 
-
 from sqlalchemy.orm import aliased
 from sqlalchemy.orm.query import Query
 
 from sqlalchemy.engine.base import Engine
-from sqlalchemy import create_engine, MetaData, Table
+from sqlalchemy import create_engine, MetaData, Table, and_
 
-from app import auth
-from app.resources.config import API_USERNAME, API_PASSWORD, SCHEMA
-
-
-@auth.verify_password
-def verify(username: str, password: str) -> bool:
-	""" Function that handles the logic for basic authentication """
-	if not username and password:
-		return False
-
-	if username != API_USERNAME or password != API_PASSWORD:
-		return False
-
-	return True
+# from app import auth
+from app.resources.config import DOTENV_ABSPATH
 
 
-def get_db_engine(user: str, password: str, host: str, port: int, db: str) -> Engine:
+load_dotenv(DOTENV_ABSPATH)
+
+
+def get_db_engine() -> Engine:
 	try:
-		url: str = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{db}"
+		url: str = os.getenv("DB_URL")
 		return create_engine(url=url)
 	except:
 		raise Exception
 
 
-def get_db_metadata(schema: str = SCHEMA) -> MetaDataType:
+def get_db_metadata(schema: str = os.getenv("DB_SCHEMA")) -> MetaDataType:
 	try:
 		return MetaData(schema=schema)
 	except:
@@ -155,6 +148,24 @@ def get_place_full_data_query(engine: Engine, place_name: str) -> Query:
 		.outerjoin(reviews_table, sites_table.c.id == reviews_table.c.id_sitio)
 		.outerjoin(pivot_query, sites_table.c.id == pivot_query.c.id_sitio)
 		.where(sites_table.c.nombre == place_name)
+	)
+
+	return query
+
+
+def get_verify_user_query(engine: Engine, email: str, password: str) -> Query:
+	metadata: MetaData = get_db_metadata()
+
+	users_table = Table("usuarios", metadata, autoload_with=engine)
+
+	query: Query = (
+		select(users_table.c.id)
+		.where(
+			and_(
+				users_table.c.correo == email,
+				users_table.c.contraseña == password
+			)
+		)
 	)
 
 	return query
