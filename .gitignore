@@ -164,3 +164,7 @@ cython_debug/
 # VSCode
 .vs/
 .vscode/
+
+# Vosk models
+vosk-model-small-es-*/
+vosk-model-es-*/

@@ -6,7 +6,6 @@ from flask_restful import Resource
 from flask import request, make_response, jsonify
 from flask_jwt_extended import create_access_token
 
-# from app import auth
 from app.resources.config import PROJECT_NAME
 from app.resources.functions import get_db_engine, get_verify_user_query
 
@@ -48,19 +47,14 @@ class Auth(Resource):
 			raise Exception
 
 		if user is None:
-			response: dict = {
-				"status": "Failed",
-				"message": "Bad username or password"
-			}
-			return make_response(jsonify(response), 401)
+			raise KeyError("TT.D402")
 		else:
 			user_data: dict = dict(user._mapping)
 			logger.info(f"Queried user data: {user_data}")
 
-		access_token = create_access_token(identity=user_data["id"])
+		access_token = create_access_token(identity=user_data)
 		response: dict = {
-			"status": "Correct",
+			"status": "Success",
 			"token": access_token,
-			"user_id": user_data["id"]
 		}
 		return make_response(jsonify(response), 200)

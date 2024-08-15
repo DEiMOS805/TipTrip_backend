@@ -5,29 +5,26 @@ from flask_restful import Resource
 from flask_jwt_extended import jwt_required
 from flask import request, make_response, jsonify
 
-# from app import auth
 from app.resources.config import PROJECT_NAME
-from app.resources.functions import get_db_engine, get_place_full_data_query
+from app.resources.functions import get_db_engine, get_demo_data_query
 
 
-logger = getLogger(f"{PROJECT_NAME}.get_record_endpoint")
+logger = getLogger(f"{PROJECT_NAME}.get_all_records_endpoint")
 
 
-class GetRecord(Resource):
+class GetDemoData(Resource):
 	@jwt_required()
-	def get(self) -> dict:
+	def get(self):
 		logger.info("Getting request data...")
 		# request_headers = request.headers
-		place_name = request.json.get("place_name", None)
+		category = request.json.get("category", None)
+		municipality = request.json.get("municipality", None)
 
 		logger.info("Checking request data...")
-		if not place_name:
-			raise KeyError("place_name")
-
-		if not isinstance(place_name, str):
-			raise TypeError("place_name")
-
-		logger.debug(f"Param (place_name) value: {place_name}")
+		if category is not None and not isinstance(category, str):
+			raise TypeError("category")
+		if municipality is not None and not isinstance(municipality, str):
+			raise TypeError("municipality")
 
 		logger.info("Processing request...")
 		logger.info("Connecting to DB...")
@@ -35,7 +32,7 @@ class GetRecord(Resource):
 
 		try:
 			logger.info("Making consult...")
-			query = get_place_full_data_query(engine, place_name)
+			query = get_demo_data_query(engine, category, municipality)
 
 			with engine.connect() as connection:
 				with connection.begin() as transaction:
@@ -48,8 +45,9 @@ class GetRecord(Resource):
 			raise Exception
 
 		response: dict = {
-			"status": "Correct",
-			"data": data[0]
+			"status": "Success",
+			"message": "Data got successfully",
+			"data": data
 		}
 
 		return make_response(jsonify(response), 200)

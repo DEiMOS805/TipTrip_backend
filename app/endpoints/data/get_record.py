@@ -5,27 +5,26 @@ from flask_restful import Resource
 from flask_jwt_extended import jwt_required
 from flask import request, make_response, jsonify
 
-# from app import auth
 from app.resources.config import PROJECT_NAME
-from app.resources.functions import get_db_engine, get_demo_data_query
+from app.resources.functions import get_db_engine, get_place_full_data_query
 
 
-logger = getLogger(f"{PROJECT_NAME}.get_all_records_endpoint")
+logger = getLogger(f"{PROJECT_NAME}.get_record_endpoint")
 
 
-class GetDemoData(Resource):
+class GetRecord(Resource):
 	@jwt_required()
-	def get(self):
+	def get(self) -> dict:
 		logger.info("Getting request data...")
 		# request_headers = request.headers
-		table_name = request.json.get("table_name", None)
+		place_name = request.json.get("place_name", None)
 
 		logger.info("Checking request data...")
-		if not table_name:
-			raise KeyError("table_name")
+		if not place_name:
+			raise KeyError("place_name")
 
-		if not isinstance(table_name, str):
-			raise TypeError("table_name")
+		if not isinstance(place_name, str):
+			raise TypeError("place_name")
 
 		logger.info("Processing request...")
 		logger.info("Connecting to DB...")
@@ -33,7 +32,7 @@ class GetDemoData(Resource):
 
 		try:
 			logger.info("Making consult...")
-			query = get_demo_data_query(engine)
+			query = get_place_full_data_query(engine, place_name)
 
 			with engine.connect() as connection:
 				with connection.begin() as transaction:
@@ -46,8 +45,9 @@ class GetDemoData(Resource):
 			raise Exception
 
 		response: dict = {
-			"status": "Correct",
-			"data": data[:5]
+			"status": "Success",
+			"message": "Data got successfully",
+			"data": data[0]
 		}
 
 		return make_response(jsonify(response), 200)

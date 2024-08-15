@@ -1,5 +1,6 @@
 import os
 
+
 PROJECT_NAME: str = "Tip_Trip"
 
 LOGGING_FORMAT: str = "[%(asctime)s] %(levelname)s in %(name)s: %(message)s"

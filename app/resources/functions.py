@@ -10,7 +10,7 @@ from sqlalchemy.orm import aliased
 from sqlalchemy.orm.query import Query
 
 from sqlalchemy.engine.base import Engine
-from sqlalchemy import create_engine, MetaData, Table, and_
+from sqlalchemy import create_engine, MetaData, Table, sql, and_, insert
 
 # from app import auth
 from app.resources.config import DOTENV_ABSPATH
@@ -34,9 +34,8 @@ def get_db_metadata(schema: str = os.getenv("DB_SCHEMA")) -> MetaDataType:
 		raise Exception
 
 
-def get_demo_data_query(engine: Engine) -> Query:
+def get_demo_data_query(engine: Engine, category: str, municipality: str) -> Query:
 	metadata: MetaData = get_db_metadata()
-
 	sites_table = Table("sitios_turisticos", metadata, autoload_with=engine)
 	images_table = Table("imagenes", metadata, autoload_with=engine)
 	addresses_table = Table("direcciones", metadata, autoload_with=engine)
@@ -76,12 +75,20 @@ def get_demo_data_query(engine: Engine) -> Query:
 		)
 	)
 
+	filters: list = []
+	if category is not None:
+		filters.append(sites_table.c.clasificacion_sitio == category)
+	if municipality is not None:
+		filters.append(addresses_table.c.delegacion_municipio == municipality)
+
+	if filters:
+		query = query.where(and_(*filters))
+
 	return query
 
 
 def get_place_full_data_query(engine: Engine, place_name: str) -> Query:
 	metadata: MetaData = get_db_metadata()
-
 	sites_table = Table("sitios_turisticos", metadata, autoload_with=engine)
 	images_table = Table("imagenes", metadata, autoload_with=engine)
 	addresses_table = Table("direcciones", metadata, autoload_with=engine)
@@ -153,13 +160,38 @@ def get_place_full_data_query(engine: Engine, place_name: str) -> Query:
 	return query
 
 
-def get_verify_user_query(engine: Engine, email: str, password: str) -> Query:
-	metadata: MetaData = get_db_metadata()
+def get_add_user_query(
+		engine: Engine,
+		username: str,
+		email: str,
+		password: str,
+		role: str | None,
+		image_path: str | None,
+	) -> Query:
 
+	metadata: MetaData = get_db_metadata()
 	users_table = Table("usuarios", metadata, autoload_with=engine)
 
 	query: Query = (
-		select(users_table.c.id)
+		insert(users_table).values(
+			id=sql.expression.text("DEFAULT"),
+			nombre=username,
+			correo=email,
+			contraseña=password,
+			rol=role,
+			ruta_imagen_perfil=image_path
+		)
+	)
+
+	return query
+
+
+def get_verify_user_query(engine: Engine, email: str, password: str) -> Query:
+	metadata: MetaData = get_db_metadata()
+	users_table = Table("usuarios", metadata, autoload_with=engine)
+
+	query: Query = (
+		select(users_table.c.id, users_table.c.nombre)
 		.where(
 			and_(
 				users_table.c.correo == email,
