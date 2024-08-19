@@ -1,19 +1,23 @@
 import os
+import ast
+import wave
+import json
+# import numpy as np
+from pyaudio import paInt16
 from dotenv import load_dotenv
+from vosk import Model, KaldiRecognizer
+# from scipy.signal import butter, lfilter
 
 from sqlalchemy import case
-from sqlalchemy.sql import func, select
-from sqlalchemy.sql.selectable import Subquery, Alias
-from sqlalchemy.sql.schema import MetaData as MetaDataType
-
 from sqlalchemy.orm import aliased
 from sqlalchemy.orm.query import Query
-
+from sqlalchemy.sql import func, select
 from sqlalchemy.engine.base import Engine
+from sqlalchemy.sql.selectable import Subquery, Alias
+from sqlalchemy.sql.schema import MetaData as MetaDataType
 from sqlalchemy import create_engine, MetaData, Table, sql, and_, insert
 
-# from app import auth
-from app.resources.config import DOTENV_ABSPATH
+from app.resources.config import *
 
 
 load_dotenv(DOTENV_ABSPATH)
@@ -201,3 +205,36 @@ def get_verify_user_query(engine: Engine, email: str, password: str) -> Query:
 	)
 
 	return query
+
+
+def save_as_temp_file(audio_data: bytes) -> None:
+	with open(os.path.join(TEMP_ABSPATH, TEMP_FILE_NAME), "wb") as file:
+		file.write(audio_data)
+
+
+def speech_recognition() -> str:
+	with wave.open(os.path.join(TEMP_ABSPATH, TEMP_FILE_NAME), "rb") as file:
+		if not any([
+			file.getnchannels() != CHANNELS,
+			file.getsampwidth() != paInt16,
+			file.getframerate() != SAMPLING_RATE
+		]):
+			raise ValueError("vosk_audio_file")
+
+		model = Model(model_path=VOSK_ABSPATH)
+		recognizer = KaldiRecognizer(model, SAMPLING_RATE)
+
+		results = []
+		while True:
+			data = file.readframes(FRAMES_FLOW)
+			if len(data) == 0:
+				break
+			if recognizer.AcceptWaveform(data):
+				result = recognizer.Result()
+				results.append(json.loads(result))
+
+		final_result = recognizer.FinalResult()
+		results.append(json.loads(final_result))
+
+		text: str = f"{' '.join([res['text'] for res in results])}."
+		return text

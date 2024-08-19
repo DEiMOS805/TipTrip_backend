@@ -1,5 +1,6 @@
 import os
 import logging
+from vosk import SetLogLevel
 from dotenv import load_dotenv
 
 from flask import Flask
@@ -10,7 +11,7 @@ from app.resources.config import *
 
 
 load_dotenv(DOTENV_ABSPATH)
-
+SetLogLevel(-1)
 
 app = Flask(__name__)
 api = Api(app)
