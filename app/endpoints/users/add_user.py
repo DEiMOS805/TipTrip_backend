@@ -10,7 +10,7 @@ from app.resources.config import PROJECT_NAME
 from app.resources.functions import get_db_engine, get_add_user_query
 
 
-logger = getLogger(f"{PROJECT_NAME}.auths")
+logger = getLogger(f"{PROJECT_NAME}.add_user_endpoint")
 
 
 class AddUser(Resource):
@@ -29,6 +29,13 @@ class AddUser(Resource):
 			raise KeyError("email")
 		if not password:
 			raise KeyError("password")
+
+		if not isinstance(username, str):
+			raise TypeError("username")
+		if not isinstance(email, str):
+			raise TypeError("email")
+		if not isinstance(password, str):
+			raise TypeError("password")
 
 		logger.info("Processing request...")
 		logger.info("Connecting to DB...")

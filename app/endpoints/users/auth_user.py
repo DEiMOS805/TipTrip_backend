@@ -10,10 +10,10 @@ from app.resources.config import PROJECT_NAME
 from app.resources.functions import get_db_engine, get_verify_user_query
 
 
-logger = getLogger(f"{PROJECT_NAME}.auths")
+logger = getLogger(f"{PROJECT_NAME}.auth_user_endpoint")
 
 
-class Auth(Resource):
+class AuthUser(Resource):
 	def post(self):
 		logger.info("Getting request data...")
 		email = request.json.get("email", None)
@@ -35,23 +35,25 @@ class Auth(Resource):
 		engine: Engine = get_db_engine()
 
 		try:
-			logger.info("Making consult...")
+			logger.info("Verifying user existence...")
 			query = get_verify_user_query(engine, email, password)
 
 			with engine.connect() as connection:
 				with connection.begin() as transaction:
 					user: Row | None = connection.execute(query).first()
-
 		except:
 			transaction.rollback()
 			raise Exception
 
 		if user is None:
+			logger.error("Given user does not exist. Bad username or password error")
 			raise KeyError("TT.D402")
 		else:
+			logger.info("Given user exists")
 			user_data: dict = dict(user._mapping)
 			logger.info(f"Queried user data: {user_data}")
 
+		logger.info("Generating new JWT...")
 		access_token = create_access_token(identity=user_data)
 		response: dict = {
 			"status": "Success",

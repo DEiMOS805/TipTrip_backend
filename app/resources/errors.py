@@ -51,7 +51,7 @@ def key_error_handler(error: KeyError) -> dict:
 		)
 	elif not any(
 		f"'{key}'" == error for key in
-		["place_name", "email", "password", "audio_data"]
+		["place_name", "email", "password", "audio_data", "prompt"]
 	):
 		logger.error(error)
 		return make_error_response(
@@ -73,8 +73,8 @@ def type_error_handler(error: TypeError) -> dict:
 	error = str(error)
 
 	if not any(
-		f"'{key}'" == error for key in
-		["place_name", "email", "password", "category", "municipality", "audio_data"]
+		f"{key}" == error for key in
+		["place_name", "username", "email", "password", "category", "municipality", "audio_data", "prompt"]
 	):
 		logger.error(error)
 		return make_error_response(

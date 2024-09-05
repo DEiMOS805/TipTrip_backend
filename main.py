@@ -3,17 +3,31 @@ from flask import make_response, jsonify
 from flask_jwt_extended import jwt_required
 
 from app import app, api
-from app.endpoints.users.auth import Auth
+
 from app.endpoints.users.add_user import AddUser
+from app.endpoints.users.auth_user import AuthUser
+from app.endpoints.users.update_user import UpdateUser
+from app.endpoints.users.delete_user import DeleteUser
+
 from app.endpoints.data.get_record import GetRecord
 from app.endpoints.data.get_demo_data import GetDemoData
+
+from app.endpoints.models.agent import Agent
 from app.endpoints.models.speech_recognition import SpeechRecognition
 
 
-api.add_resource(Auth, "/auth_user")
+# Users endpoints
 api.add_resource(AddUser, "/add_user")
+api.add_resource(AuthUser, "/auth_user")
+api.add_resource(UpdateUser, "/update_user")
+api.add_resource(DeleteUser, "/delete_user")
+
+# Data endpoints
 api.add_resource(GetRecord, "/get_record")
 api.add_resource(GetDemoData, "/get_demo_data")
+
+# Models endpoints
+api.add_resource(Agent, "/agent")
 api.add_resource(SpeechRecognition, "/speech_recognition")
 
 

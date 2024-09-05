@@ -1,21 +1,26 @@
 import os
-import ast
 import wave
 import json
+# import torch
 # import numpy as np
+# from TTS.api import TTS
 from pyaudio import paInt16
+from base64 import b64encode
 from dotenv import load_dotenv
+from IPython.display import Audio
 from vosk import Model, KaldiRecognizer
 # from scipy.signal import butter, lfilter
 
-from sqlalchemy import case
 from sqlalchemy.orm import aliased
+from sqlalchemy.sql.dml import Update
 from sqlalchemy.orm.query import Query
-from sqlalchemy.sql import func, select
 from sqlalchemy.engine.base import Engine
+from sqlalchemy.sql import func, select, Delete
 from sqlalchemy.sql.selectable import Subquery, Alias
 from sqlalchemy.sql.schema import MetaData as MetaDataType
-from sqlalchemy import create_engine, MetaData, Table, sql, and_, insert
+from sqlalchemy import (
+	create_engine, MetaData, Table, sql, and_, insert, case, update, delete
+)
 
 from app.resources.config import *
 
@@ -190,19 +195,66 @@ def get_add_user_query(
 	return query
 
 
-def get_verify_user_query(engine: Engine, email: str, password: str) -> Query:
+def get_update_user_query(
+		engine: Engine,
+		user_id: int,
+		new_username: str | None,
+		new_email: str | None,
+		new_password: str | None,
+		new_role: str | None,
+		new_image_path: str | None,
+	) -> Update:
+
 	metadata: MetaData = get_db_metadata()
 	users_table = Table("usuarios", metadata, autoload_with=engine)
 
-	query: Query = (
-		select(users_table.c.id, users_table.c.nombre)
-		.where(
-			and_(
-				users_table.c.correo == email,
-				users_table.c.contraseña == password
+	query: Update = update(users_table).where(users_table.c.id == user_id)
+
+	new_values: dict = {}
+	if new_username is not None:
+		new_values["nombre"] = new_username
+	if new_email is not None:
+		new_values["correo"] = new_email
+	if new_password is not None:
+		new_values["contraseña"] = new_password
+	if new_role is not None:
+		new_values["rol"] = new_role
+	if new_image_path is not None:
+		new_values["ruta_imagen_perfil"] = new_image_path
+
+	query = query.values(new_values)
+
+	return query
+
+
+def get_delete_user_query(engine: Engine, user_id: int) -> Delete:
+	metadata: MetaData = get_db_metadata()
+	users_table = Table("usuarios", metadata, autoload_with=engine)
+
+	query: Delete = delete(users_table).where(users_table.c.id == user_id)
+
+	return query
+
+
+def get_verify_user_query(engine: Engine, email: str, password: str = None) -> Query:
+	metadata: MetaData = get_db_metadata()
+	users_table = Table("usuarios", metadata, autoload_with=engine)
+
+	if password:
+		query: Query = (
+			select(users_table.c.id, users_table.c.nombre)
+			.where(
+				and_(
+					users_table.c.correo == email,
+					users_table.c.contraseña == password
+				)
 			)
 		)
-	)
+	else:
+		query: Query = (
+			select(users_table.c.id)
+			.where(users_table.c.correo == email)
+		)
 
 	return query
 
@@ -238,3 +290,18 @@ def speech_recognition() -> str:
 
 		text: str = f"{' '.join([res['text'] for res in results])}."
 		return text
+
+
+def tts_func(prompt: str) -> str:
+# 	tts = TTS(model_name=TTS_MODEL_NAME, progress_bar=False).to(DEVICE)
+# 	tts.tts_to_file(
+# 		prompt,
+# 		speaker_wav="my/cloning/audio.wav",
+# 		file_path=join(TEMP_ABSPATH, TEMP_FILE_NAME)
+# 	)
+
+# 	with wave.open(join(TEMP_ABSPATH, TEMP_FILE_NAME), "rb") as file:
+# 		audio = file.readframes(file.getnframes())
+# 		audio_data: str = b64encode(audio).decode("utf-8")
+# 		return audio_data
+	return "None"
