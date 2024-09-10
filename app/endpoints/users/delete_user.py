@@ -7,9 +7,8 @@ from flask_jwt_extended import jwt_required
 from flask import request, make_response, jsonify
 
 from app.resources.config import PROJECT_NAME
-from app.resources.functions import (
-	get_db_engine, get_verify_user_query, get_delete_user_query
-)
+from app.resources.functions import get_db_engine
+from app.resources.users_functions import get_verify_user_query, get_delete_user_query
 
 
 logger = getLogger(f"{PROJECT_NAME}.delete_user_endpoint")
@@ -32,16 +31,16 @@ class DeleteUser(Resource):
 		logger.info("Connecting to DB...")
 		engine: Engine = get_db_engine()
 
-		try:
-			logger.info("Verifying user existence...")
-			query = get_verify_user_query(engine, email)
+		logger.info("Verifying user existence...")
+		query = get_verify_user_query(engine, email)
 
-			with engine.connect() as connection:
+		with engine.connect() as connection:
+			try:
 				with connection.begin() as transaction:
 					user: Row | None = connection.execute(query).first()
-		except:
-			transaction.rollback()
-			raise Exception
+			except:
+				transaction.rollback()
+				raise Exception
 
 		if user is None:
 			logger.error("Given user does not exist. Bad username or password error")

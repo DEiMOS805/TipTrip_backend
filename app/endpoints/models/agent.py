@@ -6,8 +6,8 @@ from flask_restful import Resource
 from flask_jwt_extended import jwt_required
 from flask import request, make_response, jsonify
 
-from app.resources.functions import tts_func
 from app.resources.config import PROJECT_NAME
+from app.resources.models_functions import tts_func
 
 
 logger = getLogger(f"{PROJECT_NAME}.agent_endpoint")

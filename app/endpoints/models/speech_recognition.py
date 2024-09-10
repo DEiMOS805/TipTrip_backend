@@ -7,7 +7,8 @@ from flask_restful import Resource
 from flask_jwt_extended import jwt_required
 from flask import request, make_response, jsonify
 
-from app.resources.functions import save_as_temp_file, speech_recognition
+from app.resources.functions import save_as_temp_file
+from app.resources.models_functions import speech_recognition
 from app.resources.config import PROJECT_NAME, TEMP_ABSPATH, TEMP_FILE_NAME
 
 

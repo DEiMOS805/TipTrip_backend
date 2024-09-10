@@ -7,7 +7,8 @@ from flask_restful import Resource
 from flask import request, make_response, jsonify
 
 from app.resources.config import PROJECT_NAME
-from app.resources.functions import get_db_engine, get_add_user_query
+from app.resources.functions import get_db_engine
+from app.resources.users_functions import get_add_user_query, encrypt
 
 
 logger = getLogger(f"{PROJECT_NAME}.add_user_endpoint")
@@ -19,7 +20,6 @@ class AddUser(Resource):
 		username = request.json.get("username", None)
 		email = request.json.get("email", None)
 		password = request.json.get("password", None)
-		role = request.json.get("role", None)
 		image_path = request.json.get("image_path", None)
 
 		logger.info("Checking request data...")
@@ -38,33 +38,35 @@ class AddUser(Resource):
 			raise TypeError("password")
 
 		logger.info("Processing request...")
+		logger.info("Encrypting password...")
+		password: bytes = encrypt(password)
+
 		logger.info("Connecting to DB...")
 		engine: Engine = get_db_engine()
 
-		try:
-			logger.info("Inserting record...")
-			query = get_add_user_query(
-				engine,
-				username,
-				email,
-				password,
-				role,
-				image_path
-			)
+		logger.info("Inserting record...")
+		query = get_add_user_query(
+			engine,
+			username,
+			email,
+			password,
+			image_path
+		)
 
-			with engine.connect() as connection:
+		with engine.connect() as connection:
+			try:
 				with connection.begin() as transaction:
 					result: CursorResult = connection.execute(query)
 					id: int = result.inserted_primary_key[0]
 					connection.commit()
 
-		except IntegrityError as e:
-			transaction.rollback()
-			raise IntegrityError(statement=None, params=None, orig=e)
+			except IntegrityError as e:
+				transaction.rollback()
+				raise IntegrityError(statement=None, params=None, orig=e)
 
-		except:
-			transaction.rollback()
-			raise Exception
+			except:
+				transaction.rollback()
+				raise Exception
 
 		response: dict = {
 			"status": "Success",

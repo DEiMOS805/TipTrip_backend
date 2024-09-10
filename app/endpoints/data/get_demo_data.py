@@ -6,7 +6,8 @@ from flask_jwt_extended import jwt_required
 from flask import request, make_response, jsonify
 
 from app.resources.config import PROJECT_NAME
-from app.resources.functions import get_db_engine, get_demo_data_query
+from app.resources.functions import get_db_engine
+from app.resources.places_functions import get_demo_data_query
 
 
 logger = getLogger(f"{PROJECT_NAME}.get_all_records_endpoint")
@@ -30,19 +31,14 @@ class GetDemoData(Resource):
 		logger.info("Connecting to DB...")
 		engine: Engine = get_db_engine()
 
-		try:
-			logger.info("Making consult...")
-			query = get_demo_data_query(engine, category, municipality)
+		logger.info("Making consult...")
+		query = get_demo_data_query(engine, category, municipality)
 
-			with engine.connect() as connection:
-				with connection.begin() as transaction:
-					data: list = connection.execute(query).fetchall()
+		with engine.connect() as connection:
+			data: list = connection.execute(query).fetchall()
 
-					# data = [list(row) for row in data]
-					data = [dict(row._mapping) for row in data]
-		except:
-			transaction.rollback()
-			raise Exception
+		logger.info("Mapping data...")
+		data = [dict(row._mapping) for row in data]
 
 		response: dict = {
 			"status": "Success",

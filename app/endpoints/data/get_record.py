@@ -6,7 +6,8 @@ from flask_jwt_extended import jwt_required
 from flask import request, make_response, jsonify
 
 from app.resources.config import PROJECT_NAME
-from app.resources.functions import get_db_engine, get_place_full_data_query
+from app.resources.functions import get_db_engine
+from app.resources.places_functions import get_place_full_data_query
 
 
 logger = getLogger(f"{PROJECT_NAME}.get_record_endpoint")
@@ -30,24 +31,26 @@ class GetRecord(Resource):
 		logger.info("Connecting to DB...")
 		engine: Engine = get_db_engine()
 
-		try:
-			logger.info("Making consult...")
-			query = get_place_full_data_query(engine, place_name)
+		logger.info("Making consult...")
+		query = get_place_full_data_query(engine, place_name)
 
-			with engine.connect() as connection:
-				with connection.begin() as transaction:
-					data: list = connection.execute(query).fetchall()
+		with engine.connect() as connection:
+			data: list = connection.execute(query).fetchall()
 
-					# data = [list(row) for row in data]
-					data = [dict(row._mapping) for row in data]
-		except:
-			transaction.rollback()
-			raise Exception
+		if data != []:
+			logger.info("Mapping data...")
+			data = [dict(row._mapping) for row in data]
 
-		response: dict = {
-			"status": "Success",
-			"message": "Data got successfully",
-			"data": data[0]
-		}
+			response: dict = {
+				"status": "Success",
+				"message": "Data got successfully",
+				"data": data[0]
+			}
+		else:
+			response: dict = {
+				"status": "Success",
+				"message": "Data not found for this place",
+				"data": None
+			}
 
 		return make_response(jsonify(response), 200)

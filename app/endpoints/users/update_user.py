@@ -7,8 +7,9 @@ from flask_jwt_extended import jwt_required
 from flask import request, make_response, jsonify
 
 from app.resources.config import PROJECT_NAME
-from app.resources.functions import (
-	get_db_engine, get_verify_user_query, get_update_user_query
+from app.resources.functions import get_db_engine
+from app.resources.users_functions import (
+	get_verify_user_query, get_update_user_query, encrypt
 )
 
 
@@ -23,7 +24,6 @@ class UpdateUser(Resource):
 		new_username = request.json.get("new_username", None)
 		new_email = request.json.get("new_email", None)
 		new_password = request.json.get("new_password", None)
-		new_role = request.json.get("new_role", None)
 		new_image_path = request.json.get("new_image_path", None)
 
 		logger.info("Checking request data...")
@@ -34,19 +34,23 @@ class UpdateUser(Resource):
 			raise TypeError("email")
 
 		logger.info("Processing request...")
+		if new_password:
+			logger.info("Encrypting new password...")
+			new_password: bytes = encrypt(new_password)
+
 		logger.info("Connecting to DB...")
 		engine: Engine = get_db_engine()
 
-		try:
-			logger.info("Verifying user existence...")
-			query = get_verify_user_query(engine, email)
+		logger.info("Verifying user existence...")
+		query = get_verify_user_query(engine, email)
 
-			with engine.connect() as connection:
+		with engine.connect() as connection:
+			try:
 				with connection.begin() as transaction:
 					user: Row | None = connection.execute(query).first()
-		except:
-			transaction.rollback()
-			raise Exception
+			except:
+				transaction.rollback()
+				raise Exception
 
 		if user is None:
 			logger.error("Given user does not exist. Bad username or password error")
@@ -64,7 +68,6 @@ class UpdateUser(Resource):
 				new_username,
 				new_email,
 				new_password,
-				new_role,
 				new_image_path
 			)
 

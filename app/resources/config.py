@@ -24,6 +24,6 @@ TTS_MODEL_NAME: str = "tts_models/es/css10/vits"
 # Project paths
 PROJECT_DIR_ABSPATH: str = getcwd()
 DOTENV_ABSPATH: str = join(PROJECT_DIR_ABSPATH, ".env")
-TEMP_ABSPATH: str = join(PROJECT_DIR_ABSPATH, "app", "temp")
+TEMP_ABSPATH: str = join(PROJECT_DIR_ABSPATH, "temp")
 AI_MODELS_ABSPATH: str = join(PROJECT_DIR_ABSPATH, "app", "resources", "models")
 VOSK_ABSPATH: str = join(AI_MODELS_ABSPATH, VOSK_MODEL_NAME)

@@ -1,4 +1,5 @@
 from logging import getLogger
+from datetime import timedelta
 from sqlalchemy.engine.row import Row
 from sqlalchemy.engine.base import Engine
 
@@ -7,7 +8,8 @@ from flask import request, make_response, jsonify
 from flask_jwt_extended import create_access_token
 
 from app.resources.config import PROJECT_NAME
-from app.resources.functions import get_db_engine, get_verify_user_query
+from app.resources.functions import get_db_engine
+from app.resources.users_functions import get_verify_user_query, decrypt
 
 
 logger = getLogger(f"{PROJECT_NAME}.auth_user_endpoint")
@@ -34,27 +36,28 @@ class AuthUser(Resource):
 		logger.info("Connecting to DB...")
 		engine: Engine = get_db_engine()
 
-		try:
-			logger.info("Verifying user existence...")
-			query = get_verify_user_query(engine, email, password)
+		logger.info("Verifying user existence...")
+		query = get_verify_user_query(engine, email, True)
 
-			with engine.connect() as connection:
-				with connection.begin() as transaction:
-					user: Row | None = connection.execute(query).first()
-		except:
-			transaction.rollback()
-			raise Exception
+		with engine.connect() as connection:
+			user: Row | None = connection.execute(query).first()
 
 		if user is None:
 			logger.error("Given user does not exist. Bad username or password error")
 			raise KeyError("TT.D402")
 		else:
-			logger.info("Given user exists")
 			user_data: dict = dict(user._mapping)
-			logger.info(f"Queried user data: {user_data}")
+			if decrypt(user_data["contraseña"]) != password:
+				logger.error("Given user does not exist. Bad username or password error")
+				raise KeyError("TT.D402")
+			else:
+				del user_data["contraseña"]
+				logger.info("Given user exists")
+				logger.info(f"Queried user data: {user_data}")
 
 		logger.info("Generating new JWT...")
-		access_token = create_access_token(identity=user_data)
+		expires: timedelta = timedelta(days=1)
+		access_token = create_access_token(identity=user_data, expires_delta=expires)
 		response: dict = {
 			"status": "Success",
 			"token": access_token,
