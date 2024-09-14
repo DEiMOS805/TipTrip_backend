@@ -57,7 +57,12 @@ def get_verify_user_query(engine: Engine, email: str, get_all: bool = False) -> 
 
 	if get_all:
 		query: Query = (
-			select(users_table.c.id, users_table.c.nombre, users_table.c.contraseña)
+			select(
+				users_table.c.id,
+				users_table.c.nombre,
+				users_table.c.contraseña,
+				users_table.c.created_at
+			)
 			.where(users_table.c.correo == email)
 		)
 	else:

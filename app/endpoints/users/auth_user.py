@@ -61,5 +61,7 @@ class AuthUser(Resource):
 		response: dict = {
 			"status": "Success",
 			"token": access_token,
+			"username": user_data["nombre"],
+			"created_at": user_data["created_at"],
 		}
 		return make_response(jsonify(response), 200)

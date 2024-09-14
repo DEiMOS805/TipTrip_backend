@@ -67,4 +67,4 @@ class DeleteUser(Resource):
 			"message": "User deleted successfully",
 		}
 
-		return make_response(jsonify(response), 201)
+		return make_response(jsonify(response), 200)
