@@ -1,4 +1,4 @@
-# import torch
+import torch
 from os import getcwd
 from os.path import join
 
@@ -18,7 +18,7 @@ ORDER: int = 6
 VOSK_MODEL_NAME = "vosk-model-small-es-0.42"
 
 # TTS variables
-# DEVICE: str = "cuda" if torch.cuda.is_available() else "cpu"
+DEVICE: str = "cuda" if torch.cuda.is_available() else "cpu"
 TTS_MODEL_NAME: str = "tts_models/es/css10/vits"
 
 # Project paths

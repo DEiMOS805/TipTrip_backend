@@ -168,3 +168,6 @@ cython_debug/
 # Vosk models
 vosk-model-small-es-*/
 vosk-model-es-*/
+
+# PostgreSQL db container
+db_data/

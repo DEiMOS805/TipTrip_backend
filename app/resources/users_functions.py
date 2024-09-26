@@ -1,4 +1,5 @@
 import os
+from logging import getLogger
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
 
@@ -6,13 +7,13 @@ from sqlalchemy.sql.dml import Update
 from sqlalchemy.orm.query import Query
 from sqlalchemy.sql import select, Delete
 from sqlalchemy.engine.base import Engine
-from sqlalchemy import MetaData, Table, insert, sql, update, delete, and_
+from sqlalchemy import MetaData, Table, insert, sql, update, delete
 
-from app.resources.config import DOTENV_ABSPATH
 from app.resources.functions import get_db_metadata
-
+from app.resources.config import DOTENV_ABSPATH, PROJECT_NAME
 
 load_dotenv(DOTENV_ABSPATH)
+logger = getLogger(f"{PROJECT_NAME}.user_functions")
 
 
 def encrypt(string: str) -> bytes:
@@ -30,45 +31,46 @@ def decrypt(string: str) -> str:
 def get_add_user_query(
 		engine: Engine,
 		username: str,
-		email: str,
-		password: str,
-		image_path: str | None,
+		mail: str,
+		pwd: bytes,
 	) -> Query:
 
+	logger.info("Getting metadata...")
 	metadata: MetaData = get_db_metadata()
-	users_table = Table("usuarios", metadata, autoload_with=engine)
+	logger.info("Conecting to users table...")
+	users_table = Table("users", metadata, autoload_with=engine)
 
+	logger.info("Creating query...")
 	query: Query = (
 		insert(users_table).values(
 			id=sql.expression.text("DEFAULT"),
-			nombre=username,
-			correo=email,
-			contraseña=password,
-			ruta_imagen_perfil=image_path
+			username=username,
+			mail=mail,
+			pwd=pwd
 		)
 	)
 
 	return query
 
 
-def get_verify_user_query(engine: Engine, email: str, get_all: bool = False) -> Query:
+def get_verify_user_query(engine: Engine, mail: str, get_all: bool = False) -> Query:
 	metadata: MetaData = get_db_metadata()
-	users_table = Table("usuarios", metadata, autoload_with=engine)
+	users_table = Table("users", metadata, autoload_with=engine)
 
 	if get_all:
 		query: Query = (
 			select(
 				users_table.c.id,
-				users_table.c.nombre,
-				users_table.c.contraseña,
+				users_table.c.username,
+				users_table.c.pwd,
 				users_table.c.created_at
 			)
-			.where(users_table.c.correo == email)
+			.where(users_table.c.mail == mail)
 		)
 	else:
 		query: Query = (
 			select(users_table.c.id)
-			.where(users_table.c.correo == email)
+			.where(users_table.c.mail == mail)
 		)
 
 	return query
@@ -76,37 +78,34 @@ def get_verify_user_query(engine: Engine, email: str, get_all: bool = False) -> 
 
 def get_update_user_query(
 		engine: Engine,
-		user_id: int,
+		id: int,
 		new_username: str | None,
-		new_email: str | None,
-		new_password: str | None,
-		new_image_path: str | None,
+		new_mail: str | None,
+		new_pwd: bytes | None,
 	) -> Update:
 
 	metadata: MetaData = get_db_metadata()
-	users_table = Table("usuarios", metadata, autoload_with=engine)
+	users_table = Table("users", metadata, autoload_with=engine)
 
-	query: Update = update(users_table).where(users_table.c.id == user_id)
+	query: Update = update(users_table).where(users_table.c.id == id)
 
 	new_values: dict = {}
 	if new_username is not None:
-		new_values["nombre"] = new_username
-	if new_email is not None:
-		new_values["correo"] = new_email
-	if new_password is not None:
-		new_values["contraseña"] = new_password
-	if new_image_path is not None:
-		new_values["ruta_imagen_perfil"] = new_image_path
+		new_values["username"] = new_username
+	if new_mail is not None:
+		new_values["mail"] = new_mail
+	if new_pwd is not None:
+		new_values["pwd"] = new_pwd
 
 	query = query.values(new_values)
 
 	return query
 
 
-def get_delete_user_query(engine: Engine, user_id: int) -> Delete:
+def get_delete_user_query(engine: Engine, id: int) -> Delete:
 	metadata: MetaData = get_db_metadata()
-	users_table = Table("usuarios", metadata, autoload_with=engine)
+	users_table = Table("users", metadata, autoload_with=engine)
 
-	query: Delete = delete(users_table).where(users_table.c.id == user_id)
+	query: Delete = delete(users_table).where(users_table.c.id == id)
 
 	return query

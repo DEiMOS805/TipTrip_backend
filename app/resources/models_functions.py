@@ -1,7 +1,7 @@
 import os
 import wave
 import json
-# from TTS.api import TTS
+from TTS.api import TTS
 from pyaudio import paInt16
 from base64 import b64encode
 from vosk import Model, KaldiRecognizer
@@ -38,15 +38,15 @@ def speech_recognition() -> str:
 
 
 def tts_func(text: str) -> str:
-	# tts = TTS(model_name=TTS_MODEL_NAME, progress_bar=False).to(DEVICE)
-	# tts.tts_to_file(
-	# 	text=text,
-	# 	speaker_wav="my/cloning/audio.wav",
-	# 	file_path=join(TEMP_ABSPATH, TEMP_FILE_NAME)
-	# )
+	tts = TTS(model_name=TTS_MODEL_NAME, progress_bar=False).to(DEVICE)
+	tts.tts_to_file(
+		text=text,
+		speaker_wav="my/cloning/audio.wav",
+		file_path=join(TEMP_ABSPATH, TEMP_FILE_NAME)
+	)
 
-	# with wave.open(join(TEMP_ABSPATH, TEMP_FILE_NAME), "rb") as file:
-	# 	audio = file.readframes(file.getnframes())
-	# 	audio_data: str = b64encode(audio).decode("utf-8")
-	# 	return audio_data
-	return "None"
+	with wave.open(join(TEMP_ABSPATH, TEMP_FILE_NAME), "rb") as file:
+		audio = file.readframes(file.getnframes())
+		audio_data: str = b64encode(audio).decode("utf-8")
+		return audio_data
+	# return "None"

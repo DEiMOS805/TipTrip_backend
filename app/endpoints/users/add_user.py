@@ -1,6 +1,7 @@
 from logging import getLogger
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.query import Query
 from sqlalchemy.engine.base import Engine
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.engine.cursor import CursorResult
 
 from flask_restful import Resource
@@ -18,39 +19,37 @@ class AddUser(Resource):
 	def post(self):
 		logger.info("Getting request data...")
 		username = request.json.get("username", None)
-		email = request.json.get("email", None)
-		password = request.json.get("password", None)
-		image_path = request.json.get("image_path", None)
+		mail = request.json.get("mail", None)
+		pwd = request.json.get("pwd", None)
 
 		logger.info("Checking request data...")
 		if not username:
 			raise KeyError("username")
-		if not email:
-			raise KeyError("email")
-		if not password:
-			raise KeyError("password")
+		if not mail:
+			raise KeyError("mail")
+		if not pwd:
+			raise KeyError("pwd")
 
 		if not isinstance(username, str):
 			raise TypeError("username")
-		if not isinstance(email, str):
-			raise TypeError("email")
-		if not isinstance(password, str):
-			raise TypeError("password")
+		if not isinstance(mail, str):
+			raise TypeError("mail")
+		if not isinstance(pwd, str):
+			raise TypeError("pwd")
 
 		logger.info("Processing request...")
-		logger.info("Encrypting password...")
-		password: bytes = encrypt(password)
+		logger.info("Encrypting pwd...")
+		pwd: bytes = encrypt(pwd)
 
 		logger.info("Connecting to DB...")
 		engine: Engine = get_db_engine()
 
 		logger.info("Inserting record...")
-		query = get_add_user_query(
+		query: Query = get_add_user_query(
 			engine,
 			username,
-			email,
-			password,
-			image_path
+			mail,
+			pwd
 		)
 
 		with engine.connect() as connection:

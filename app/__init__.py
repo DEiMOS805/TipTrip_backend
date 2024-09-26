@@ -21,15 +21,18 @@ api = Api(app)
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
 jwt = JWTManager(app)
 
-# Logging configuration
+# logging configuration
 logging.basicConfig(level=logging.DEBUG, format=LOGGING_FORMAT)
 logger = logging.getLogger(PROJECT_NAME)
 
 numba_logger = logging.getLogger("numba")
 numba_logger.setLevel(logging.WARNING)
 
-# Set vosk log level
+# vosk configuration
 SetLogLevel(-1)
+
+# librosa configuration
+os.environ["LIBROSA_CACHE_DIR"] = "/tmp/librosa_cache"
 
 # Error handling
 from app.resources.errors import *
