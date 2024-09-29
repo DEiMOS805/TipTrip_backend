@@ -136,7 +136,7 @@ class UpdateUser(Resource):
 				"error_code": "TT.500"
 			}), 500)
 
-		logger.debug("User data updated successfully")
+		logger.info("User data updated successfully")
 		return make_response(jsonify({
 			"status": "Success",
 			"message": "User data updated successfully",

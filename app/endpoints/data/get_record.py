@@ -1,4 +1,5 @@
 from logging import getLogger
+from sqlalchemy.engine.row import Row
 from sqlalchemy.orm.query import Query
 from sqlalchemy.engine.base import Engine
 
@@ -63,7 +64,7 @@ class GetRecord(Resource):
 		logger.debug("Making consult...")
 		try:
 			with engine.connect() as connection:
-				data: list = connection.execute(query).fetchall()
+				data: Row | None = connection.execute(query).first()
 		except Exception as e:
 			logger.error(f"Error making consult to get full place data: {e}.\nAborting request...")
 			return make_response(jsonify({
@@ -74,7 +75,7 @@ class GetRecord(Resource):
 
 		logger.debug("Checking data...")
 		logger.debug(f"Gotten data: {data}")
-		if data == []:
+		if data is None:
 			logger.info("Request completed successfully but no data found")
 			return make_response(jsonify({
 				"status": "Success",
@@ -82,7 +83,7 @@ class GetRecord(Resource):
 			}), 204)
 		else:
 			logger.debug("Mapping data...")
-			data = [dict(row._mapping) for row in data]
+			data = dict(data._mapping)
 
 			logger.info("Request completed successfully")
 			return make_response(jsonify({

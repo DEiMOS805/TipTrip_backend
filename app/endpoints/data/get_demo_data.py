@@ -1,4 +1,5 @@
 from logging import getLogger
+from sqlalchemy.engine.row import Row
 from sqlalchemy.orm.query import Query
 from sqlalchemy.engine.base import Engine
 
@@ -64,7 +65,7 @@ class GetDemoData(Resource):
 		logger.debug("Making consult...")
 		try:
 			with engine.connect() as connection:
-				data: list = connection.execute(query).fetchall()
+				data: list[Row] | None = connection.execute(query).fetchall()
 		except Exception as e:
 			logger.error(f"Error getting data: {e}.\nAborting request...")
 			return make_response(jsonify({
@@ -75,7 +76,7 @@ class GetDemoData(Resource):
 
 		logger.debug("Checking data...")
 		logger.debug(f"Gotten first 5 rows of data: {data[:5]}")
-		if data == []:
+		if data is None:
 			logger.info("Request completed successfully but no data found")
 			return make_response(jsonify({
 				"status": "Success",

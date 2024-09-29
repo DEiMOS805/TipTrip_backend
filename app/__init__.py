@@ -40,7 +40,7 @@ def create_app() -> Flask:
 	jwt = JWTManager(app)
 
 	# logging configurations
-	logging.basicConfig(level=logging.INFO, format=LOGGING_FORMAT)
+	logging.basicConfig(level=logging.DEBUG, format=LOGGING_FORMAT)
 	logger = logging.getLogger(PROJECT_NAME)
 
 	# numba configurations
