@@ -10,7 +10,7 @@ from app.resources.config import *
 
 
 def speech_recognition() -> str:
-	with wave.open(os.path.join(TEMP_ABSPATH, TEMP_FILE_NAME), "rb") as file:
+	with wave.open(os.path.join("/tmp", TEMP_FILE_NAME), "rb") as file:
 		if not any([
 			file.getnchannels() != CHANNELS,
 			file.getsampwidth() != paInt16,
@@ -42,11 +42,10 @@ def tts_func(text: str) -> str:
 	tts.tts_to_file(
 		text=text,
 		speaker_wav="my/cloning/audio.wav",
-		file_path=join(TEMP_ABSPATH, TEMP_FILE_NAME)
+		file_path=join("/tmp", TEMP_FILE_NAME)
 	)
 
-	with wave.open(join(TEMP_ABSPATH, TEMP_FILE_NAME), "rb") as file:
+	with wave.open(join("/tmp", TEMP_FILE_NAME), "rb") as file:
 		audio = file.readframes(file.getnframes())
 		audio_data: str = b64encode(audio).decode("utf-8")
 		return audio_data
-	# return "None"

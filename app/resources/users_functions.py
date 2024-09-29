@@ -1,4 +1,4 @@
-import os
+from os import getenv
 from logging import getLogger
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
@@ -18,12 +18,12 @@ logger = getLogger(f"{PROJECT_NAME}.user_functions")
 
 def encrypt(string: str) -> bytes:
 	encoded: bytes = string.encode()
-	f: Fernet = Fernet(os.getenv("FERNET_SECRET_KEY"))
+	f: Fernet = Fernet(getenv("FERNET_SECRET_KEY"))
 	return f.encrypt(encoded)
 
 
 def decrypt(string: str) -> str:
-	f: Fernet = Fernet(os.getenv("FERNET_SECRET_KEY"))
+	f: Fernet = Fernet(getenv("FERNET_SECRET_KEY"))
 	decrypted: bytes = f.decrypt(string)
 	return decrypted.decode()
 
@@ -32,7 +32,7 @@ def get_add_user_query(
 		engine: Engine,
 		username: str,
 		mail: str,
-		pwd: bytes,
+		password: bytes,
 	) -> Query:
 
 	logger.info("Getting metadata...")
@@ -46,7 +46,7 @@ def get_add_user_query(
 			id=sql.expression.text("DEFAULT"),
 			username=username,
 			mail=mail,
-			pwd=pwd
+			password=password
 		)
 	)
 
@@ -62,7 +62,7 @@ def get_verify_user_query(engine: Engine, mail: str, get_all: bool = False) -> Q
 			select(
 				users_table.c.id,
 				users_table.c.username,
-				users_table.c.pwd,
+				users_table.c.password,
 				users_table.c.created_at
 			)
 			.where(users_table.c.mail == mail)
@@ -81,31 +81,27 @@ def get_update_user_query(
 		id: int,
 		new_username: str | None,
 		new_mail: str | None,
-		new_pwd: bytes | None,
+		new_password: bytes | None,
 	) -> Update:
 
 	metadata: MetaData = get_db_metadata()
 	users_table = Table("users", metadata, autoload_with=engine)
 
 	query: Update = update(users_table).where(users_table.c.id == id)
-
 	new_values: dict = {}
 	if new_username is not None:
 		new_values["username"] = new_username
 	if new_mail is not None:
 		new_values["mail"] = new_mail
-	if new_pwd is not None:
-		new_values["pwd"] = new_pwd
+	if new_password is not None:
+		new_values["password"] = new_password
 
 	query = query.values(new_values)
-
 	return query
 
 
 def get_delete_user_query(engine: Engine, id: int) -> Delete:
 	metadata: MetaData = get_db_metadata()
 	users_table = Table("users", metadata, autoload_with=engine)
-
 	query: Delete = delete(users_table).where(users_table.c.id == id)
-
 	return query

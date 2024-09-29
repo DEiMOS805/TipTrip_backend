@@ -1,13 +1,5 @@
 # syntax=docker/dockerfile:1
-
-# Comments are provided throughout this file to help you get started.
-# If you need more help, visit the Dockerfile reference guide at
-# https://docs.docker.com/go/dockerfile-reference/
-
-# Want to help us make this template better? Share your feedback here: https://forms.gle/ybq9Krt8jtBL3iCk7
-
-ARG PYTHON_VERSION=3.11.5
-FROM python:${PYTHON_VERSION}-slim as base
+FROM python:3.11.5-slim as base
 
 # Prevents Python from writing pyc files.
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -16,11 +8,11 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # the application crashes without emitting any logs due to buffering.
 ENV PYTHONUNBUFFERED=1
 
+# Set the working directory in the container to /app.
 WORKDIR /app
 
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
-ARG UID=10001
 RUN adduser \
     --disabled-password \
     --gecos "" \
@@ -28,15 +20,12 @@ RUN adduser \
     # --home "/nonexistent" \
     --shell "/sbin/nologin" \
     # --no-create-home \
-    --uid "${UID}" \
+    --uid "10001" \
     appuser
 
 RUN mkdir -p /home/appuser && chown appuser:appuser /home/appuser
 
-# Download dependencies as a separate step to take advantage of Docker's caching.
-# Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
-# Leverage a bind mount to requirements.txt to avoid having to copy them into
-# into this layer.
+# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     gcc \
@@ -49,6 +38,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsndfile1 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Download dependencies as a separate step to take advantage of Docker's caching.
+# Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
+# Leverage a bind mount to requirements.txt to avoid having to copy them into
+# into this layer.
 RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=bind,source=requirements.txt,target=requirements.txt \
     python -m pip install -r requirements.txt
@@ -61,10 +54,9 @@ RUN chown -R appuser:appuser /app
 
 # Switch to the non-privileged user to run the application.
 USER appuser
-COPY --chown=appuser:appuser . .
 
-# Copy the source code into the container.
-# COPY . .
+# Copy the source code into the container using the non-privileged user.
+COPY --chown=appuser:appuser . .
 
 # Set permissions for /app after copying the files
 RUN chmod -R 775 /app
@@ -73,4 +65,4 @@ RUN chmod -R 775 /app
 EXPOSE 5000
 
 # Run the application.
-CMD ["python3", "main.py"]
+ENTRYPOINT [ "./service_entrypoint.sh" ]
