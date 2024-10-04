@@ -19,7 +19,6 @@ class GetDemoData(Resource):
 	@jwt_required()
 	def get(self):
 		logger.debug("Getting request data...")
-		# request_headers = request.headers
 		category = request.json.get("category", None)
 		municipality = request.json.get("municipality", None)
 
@@ -75,7 +74,6 @@ class GetDemoData(Resource):
 			}), 500)
 
 		logger.debug("Checking data...")
-		logger.debug(f"Gotten first 5 rows of data: {data[:5]}")
 		if data is None:
 			logger.info("Request completed successfully but no data found")
 			return make_response(jsonify({
@@ -83,6 +81,7 @@ class GetDemoData(Resource):
 				"message": "No data found"
 			}), 204)
 		else:
+			logger.debug(f"Gotten first 5 rows of data: {data[:5]}")
 			logger.debug("Mapping data...")
 			data = [dict(row._mapping) for row in data]
 

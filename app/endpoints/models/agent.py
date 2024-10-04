@@ -1,5 +1,3 @@
-from os import remove
-from os.path import join
 from logging import getLogger
 
 from flask_restful import Resource
@@ -41,9 +39,9 @@ class Agent(Resource):
 		logger.debug("Processing request...")
 		logger.debug("Generating agent response...")
 		try:
-			audio_data = tts_func(prompt)
-		except Exception:
-			logger.error("Error generating agent response. Aborting request...")
+			audio_data: dict = tts_func(prompt)
+		except Exception as e:
+			logger.error(f"Error generating agent response {e}.\nAborting request...")
 			return make_response(jsonify({
 				"status": "Failed",
 				"message": GENERAL_ERROR_MESSAGE,

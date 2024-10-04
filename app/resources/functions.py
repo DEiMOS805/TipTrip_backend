@@ -1,7 +1,6 @@
 import os
 from dotenv import load_dotenv
 from sqlalchemy.engine.base import Engine
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.sql.schema import MetaData as MetaDataType
 
