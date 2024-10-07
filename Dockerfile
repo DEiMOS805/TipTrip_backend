@@ -59,10 +59,11 @@ USER appuser
 COPY --chown=appuser:appuser . .
 
 # Set permissions for /app after copying the files
-RUN chmod -R 775 /app
+RUN chmod -R 777 /app
 
 # Expose the port that the application listens on.
 EXPOSE 5000
 
 # Run the application.
-ENTRYPOINT [ "./service_entrypoint.sh" ]
+# ENTRYPOINT [ "/app/service_entrypoint.sh" ]
+CMD ["python3", "main.py"]
