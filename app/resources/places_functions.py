@@ -21,6 +21,8 @@ def get_demo_data_query(engine: Engine, category: str, municipality: str) -> Que
 			addresses_table.c.municipality,
 			addresses_table.c.state,
 			addresses_table.c.cp,
+			addresses_table.c.latitude,
+			addresses_table.c.longitude,
 		)
 		.outerjoin(
 			addresses_table, places_table.c.id == addresses_table.c.id_place

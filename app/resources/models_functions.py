@@ -4,6 +4,7 @@ import json
 from TTS.api import TTS
 from pyaudio import paInt16
 from base64 import b64encode
+from geopy.distance import geodesic
 from vosk import Model, KaldiRecognizer
 
 from app.resources.config import *
@@ -69,3 +70,10 @@ def tts_func(text: str) -> dict:
 	}
 
 	return audio_data
+
+def get_place_distance(
+		current_position: tuple[float, float],
+		place_position: tuple[float, float]
+	) -> float:
+
+	return geodesic(current_position, place_position).kilometers

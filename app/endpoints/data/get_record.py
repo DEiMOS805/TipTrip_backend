@@ -75,7 +75,7 @@ class GetRecord(Resource):
 
 		logger.debug("Checking data...")
 		logger.debug(f"Gotten data: {data}")
-		if data is None:
+		if data == [] or data is None:
 			logger.info("Request completed successfully but no data found")
 			return make_response(jsonify({
 				"status": "Success",
