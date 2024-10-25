@@ -35,3 +35,4 @@ README.md
 README.Docker.md
 
 db_data/
+migrations/

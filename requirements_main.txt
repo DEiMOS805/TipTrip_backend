@@ -15,3 +15,6 @@ waitress==3.0.0
 Wave==0.0.2
 transformers==4.44.2
 TTS==0.22.0
+# langchain
+# langchain_openai
+# langchain_experimental
