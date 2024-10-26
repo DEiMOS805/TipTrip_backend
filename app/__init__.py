@@ -7,16 +7,24 @@ from dotenv import load_dotenv
 from flasgger import Swagger
 from flask_restful import Api
 from flask_migrate import Migrate
+from flask_jwt_extended import JWTManager
 from flask.wrappers import Response as WrapperResponse
-from flask_jwt_extended import JWTManager, jwt_required
 from flask import Flask, Response, make_response, jsonify
+
+from werkzeug.exceptions import HTTPException
+from jwt.exceptions import ExpiredSignatureError, InvalidSignatureError
+from flask_jwt_extended.exceptions import NoAuthorizationError, InvalidHeaderError, RevokedTokenError, UserLookupError
 
 from app.resources.config import *
 from app.resources.database import db
-from app.blueprints.user import user_blueprint
-from app.blueprints.place import place_blueprint
-from app.blueprints.models import model_blueprint
 from app.resources.swagger_template import swagger_template
+# from app.resources.error_handlers import set_error_handlers
+
+from app.endpoints.home import Home
+from app.endpoints.download import Download
+from app.endpoints.blueprints.user import user_blueprint
+from app.endpoints.blueprints.place import place_blueprint
+from app.endpoints.blueprints.models import model_blueprint
 
 
 load_dotenv(DOTENV_ABSPATH)
@@ -65,50 +73,86 @@ def create_app() -> Flask:
 	environ["LIBROSA_CACHE_DIR"] = LIBROSA_CACHE_DIR
 
 	###########################################################################
-	######################### Set JWT error handlers ##########################
+	############################ Set error handlers ###########################
 	###########################################################################
 
-	@jwt.expired_token_loader
-	def handle_expired_token(jwt_header, jwt_payload) -> Response:
+	# set_error_handlers(app, jwt)
+
+	@jwt.unauthorized_loader
+	def handle_unauthorized_token(e) -> Response:
+		return make_response(jsonify({
+			"status": "Failed",
+			"message": "Unauthorized token",
+			"error_code": "TT.401"
+		}), 401)
+
+	@app.errorhandler(HTTPException)
+	def not_found_error_handler(error: HTTPException) -> Response:
+		""" Function that handles the error 404 """
+		return make_response(jsonify({
+			"status": "Failed",
+			"message": "Resource not found",
+			"error_code": "TT.404"
+		}), 404)
+
+	@app.errorhandler(ExpiredSignatureError)
+	def handle_expired_token(error: ExpiredSignatureError) -> Response:
 		return make_response(jsonify({
 			"status": "Failed",
 			"message": "Token already expired",
 			"error_code": "TT.401"
 		}), 401)
 
-	@jwt.invalid_token_loader
-	def handle_invalid_token(e) -> Response:
+	@app.errorhandler(InvalidSignatureError)
+	def handle_invalid_signature(error: InvalidSignatureError) -> Response:
+		return make_response(jsonify({
+			"status": "Failed",
+			"message": "Invalid token signature",
+			"error_code": "TT.401"
+		}), 401)
+
+	@app.errorhandler(InvalidHeaderError)
+	def handle_invalid_token(error: InvalidHeaderError) -> Response:
 		return make_response(jsonify({
 			"status": "Failed",
 			"message": "Invalid token",
-			"error_code": "TT.422"
-		}), 422)
-
-	@jwt.unauthorized_loader
-	def handle_missing_token(e) -> Response:
-		return make_response(jsonify({
-			"status": "Failed",
-			"message": "Missing or unauthorized token",
 			"error_code": "TT.401"
 		}), 401)
+
+	@app.errorhandler(NoAuthorizationError)
+	def handle_missing_token(error: NoAuthorizationError) -> Response:
+		return make_response(jsonify({
+			"status": "Failed",
+			"message": "Missing token",
+			"error_code": "TT.401"
+		}), 401)
+
+	@app.errorhandler(RevokedTokenError)
+	def handle_revoked_token(error: RevokedTokenError) -> Response:
+		return make_response(jsonify({
+			"status": "Failed",
+			"message": "Token revoked",
+			"error_code": "TT.401"
+		}), 401)
+
+	@app.errorhandler(UserLookupError)
+	def handle_user_lookup_error(error: UserLookupError) -> Response:
+		return make_response(jsonify({
+			"status": "Failed",
+			"message": "User not found",
+			"error_code": "TT.404"
+		}), 404)
 
 	###########################################################################
 	####################### Add routes and blueprints #########################
 	###########################################################################
 
+	api.add_resource(Home, '/')
+	api.add_resource(Download, "/download/<string:os>")
+
 	app.register_blueprint(user_blueprint, url_prefix="/users")
 	app.register_blueprint(place_blueprint, url_prefix="/places")
 	app.register_blueprint(model_blueprint, url_prefix="/models")
-
-
-	@app.route('/')
-	@jwt_required()
-	def home() -> Response:
-		return make_response(jsonify({
-			"status": "Success",
-			"message": "Welcome to Tip Trip. Hope this tool helps you to improve your travel experiences"
-		}), 200)
-
 
 	###########################################################################
 	###################### Apply caching to all responses #####################
