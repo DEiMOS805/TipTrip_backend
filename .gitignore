@@ -171,3 +171,6 @@ vosk-model-es-*/
 
 # PostgreSQL db container
 db_data/
+
+# Database migrations
+migrations/
