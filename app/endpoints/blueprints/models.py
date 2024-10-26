@@ -8,7 +8,7 @@ from flask_restful.reqparse import Namespace
 from flask import Blueprint, Response, make_response, jsonify
 
 from app.resources.config import *
-from app.resources.functions import speech_recognition, tts_func
+from app.resources.functions import speech_recognition, consultar_agente
 from app.resources.parsers import create_speech_recognition_model_parser, create_agent_model_parser
 
 
@@ -93,7 +93,7 @@ class Agent(Resource):
 
 		logger.debug("Procesing prompt with agent model...")
 		try:
-			audio_data: dict = tts_func(args["prompt"])
+			audio_data: dict = consultar_agente(args["prompt"])
 
 		except Exception as e:
 			logger.error(f"Error generating agent response {e}.\nAborting request...")

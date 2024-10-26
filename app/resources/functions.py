@@ -10,9 +10,12 @@ from base64 import b64encode
 from geopy.distance import geodesic
 from cryptography.fernet import Fernet
 from vosk import Model, KaldiRecognizer
+from langchain_openai import ChatOpenAI
+from langchain.memory import ConversationBufferMemory
+from langchain_experimental.agents.agent_toolkits import create_csv_agent
 
 from app.resources.config import *
-
+from app.resources.llm import AgenteConversacional
 
 load_dotenv(DOTENV_ABSPATH)
 
@@ -72,6 +75,22 @@ def speech_recognition() -> str:
 		text: str = f"{' '.join([res['text'] for res in results])}."
 		return text
 
+#!Agente conversacional
+
+#!agente = AgenteConversacional()
+
+def consultar_agente(pregunta: str) -> dict:
+	respuesta = agente.consultar_agente(pregunta)
+	agente_response_text = respuesta["agent_response"]
+
+	#Generar el audio de la respuesta 
+	audio_data = tts_func(agente_response_text)
+
+	#Retorna respuesta y audio
+	return{
+		"agent_response": agente_response_text,
+		"audio_data": audio_data
+	}
 
 def tts_func(text: str) -> dict:
 	tts = TTS(model_name=TTS_MODEL_NAME, progress_bar=False).to(DEVICE)
