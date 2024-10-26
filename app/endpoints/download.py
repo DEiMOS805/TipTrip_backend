@@ -1,6 +1,5 @@
-from logging import Logger, getLogger
-
 from flask_restful import Resource
+from logging import Logger, getLogger
 from flask import Response, send_from_directory, make_response, jsonify
 
 from app.resources.config import PROJECT_NAME, GENERAL_ERROR_MESSAGE, APPS_ABSPATH
@@ -15,7 +14,7 @@ class Download(Resource):
 			logger.error("OS not found. Aborting request...")
 			return make_response(jsonify({
 				"status": "Failed",
-				"message": GENERAL_ERROR_MESSAGE,
+				"message": "OS not found",
 				"error_code": "TT.D404"
 			}), 404)
 

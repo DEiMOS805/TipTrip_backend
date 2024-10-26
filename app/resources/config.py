@@ -1,4 +1,4 @@
-# import torch
+import torch
 from os import getcwd
 from os.path import join
 
@@ -19,7 +19,7 @@ VOSK_MODEL_NAME: str = "vosk-model-small-es-0.42"
 LIBROSA_CACHE_DIR: str = "/tmp/librosa_cache"
 
 # TTS variables
-# DEVICE: str = "cuda" if torch.cuda.is_available() else "cpu"
+DEVICE: str = "cuda" if torch.cuda.is_available() else "cpu"
 TTS_MODEL_NAME: str = "tts_models/es/css10/vits"
 
 # Project paths

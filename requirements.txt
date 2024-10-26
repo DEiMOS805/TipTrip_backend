@@ -13,5 +13,5 @@ SQLAlchemy==2.0.31
 vosk==0.3.45
 waitress==3.0.0
 Wave==0.0.2
-# transformers==4.44.2
-# TTS==0.22.0
+transformers==4.44.2
+TTS==0.22.0

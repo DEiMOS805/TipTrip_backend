@@ -8,7 +8,7 @@ from flask_restful.reqparse import Namespace
 from flask import Blueprint, Response, make_response, jsonify
 
 from app.resources.config import *
-from app.resources.functions import speech_recognition
+from app.resources.functions import speech_recognition, tts_func
 from app.resources.parsers import create_speech_recognition_model_parser, create_agent_model_parser
 
 
@@ -83,33 +83,33 @@ class SpeechRecognition(Resource):
 		}), 201)
 
 
-# class Agent(Resource):
-# 	@jwt_required()
-# 	def post(self) -> Response:
-# 		logger.debug("Starting agent process...")
+class Agent(Resource):
+	@jwt_required()
+	def post(self) -> Response:
+		logger.debug("Starting agent process...")
 
-# 		logger.debug("Checking request data...")
-# 		args: Namespace = create_agent_model_parser()
+		logger.debug("Checking request data...")
+		args: Namespace = create_agent_model_parser()
 
-# 		logger.debug("Procesing prompt with agent model...")
-# 		try:
-# 			audio_data: dict = tts_func(args["prompt"])
+		logger.debug("Procesing prompt with agent model...")
+		try:
+			audio_data: dict = tts_func(args["prompt"])
 
-# 		except Exception as e:
-# 			logger.error(f"Error generating agent response {e}.\nAborting request...")
-# 			return make_response(jsonify({
-# 				"status": "Failed",
-# 				"message": GENERAL_ERROR_MESSAGE,
-# 				"error_code": "TT.500"
-# 			}), 500)
+		except Exception as e:
+			logger.error(f"Error generating agent response {e}.\nAborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": GENERAL_ERROR_MESSAGE,
+				"error_code": "TT.500"
+			}), 500)
 
-# 		logger.info("Agent response process completed successfully")
-# 		return make_response(jsonify({
-# 			"status": "Success",
-# 			"message": "Agent response process completed successfully",
-# 			"audio_data": audio_data
-# 		}), 201)
+		logger.info("Agent response process completed successfully")
+		return make_response(jsonify({
+			"status": "Success",
+			"message": "Agent response process completed successfully",
+			"audio_data": audio_data
+		}), 201)
 
 
 api.add_resource(SpeechRecognition, "/asr")
-# api.add_resource(Agent, "/agent")
+api.add_resource(Agent, "/agent")
