@@ -1,57 +1,38 @@
 services:
   postgres:
-    image: postgres
+    image: postgres:latest
     container_name: postgres
     restart: always
     ports:
       - 5430:5432
     environment:
       - DATABASE_HOST=postgres
-      - POSTGRES_USER=tt_admin
-      - POSTGRES_PASSWORD=tip_trip
-      - POSTGRES_DB=tip_trip
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=tiptrip
+      - POSTGRES_DB=tiptrip_db
     volumes:
       - ./db_data/postgres_data:/var/lib/postgresql/data
     networks:
-      - backend
+      - tiptrip_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tt_admin"]  # Verifica si PostgreSQL está listo
-      interval: 10s  # Intervalo de verificación
-      timeout: 5s    # Tiempo máximo para esperar respuesta
-      retries: 5     # Reintentos antes de fallar
-      start_period: 30s  # Tiempo de espera antes de la primera verificación
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: pgadmin
-    ports:
-      - 80:80
-    environment:
-      PGADMIN_DEFAULT_EMAIL: "admin@admin.com"
-      PGADMIN_DEFAULT_PASSWORD: "admin"
-    networks:
-      - backend
-    depends_on:
-      - postgres
-
-  app:
+  api:
     build:
       context: .
-    container_name: app
+    container_name: tiptrip
     ports:
       - 5000:5000
     networks:
-      - backend
+      - tiptrip_network
     depends_on:
       postgres:
         condition: service_healthy
 
 networks:
-  backend:
+  tiptrip_network:
     driver: bridge
-
-# volumes:
-#   db-data:
-# secrets:
-#   db-password:
-#     file: db/password.txt

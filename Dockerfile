@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM python:3.11.5-slim as base
+FROM python:3.11.5-slim
 
 # Prevents Python from writing pyc files.
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -10,20 +10,6 @@ ENV PYTHONUNBUFFERED=1
 
 # Set the working directory in the container to /app.
 WORKDIR /app
-
-# Create a non-privileged user that the app will run under.
-# See https://docs.docker.com/go/dockerfile-user-best-practices/
-RUN adduser \
-    --disabled-password \
-    --gecos "" \
-    --home "/home/appuser" \
-    # --home "/nonexistent" \
-    --shell "/sbin/nologin" \
-    # --no-create-home \
-    --uid "10001" \
-    appuser
-
-RUN mkdir -p /home/appuser && chown appuser:appuser /home/appuser
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -49,20 +35,15 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 # Set librosa permissions
 RUN chmod -R 777 /usr/local/lib/python3.11/site-packages/librosa/
 
-# Set correct permissions for /app and change ownership to the non-privileged user
-RUN chown -R appuser:appuser /app
+# Copy the source code into the container and set the correct ownership
+COPY . .
 
-# Switch to the non-privileged user to run the application.
-USER appuser
-
-# Copy the source code into the container using the non-privileged user.
-COPY --chown=appuser:appuser . .
-
-# Set permissions for /app after copying the files
-RUN chmod -R 775 /app
+# Grant permissions to the entrypoint script
+COPY entrypoint.sh ./entrypoint.sh
+RUN chmod +x entrypoint.sh
 
 # Expose the port that the application listens on.
 EXPOSE 5000
 
-# Run the application.
-ENTRYPOINT [ "./service_entrypoint.sh" ]
+# Run the application using a entrypoint script
+ENTRYPOINT [ "./entrypoint.sh" ]

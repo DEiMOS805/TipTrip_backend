@@ -123,6 +123,15 @@ def create_auth_user_parser() -> Namespace:
 	return parser.parse_args()
 
 
+def create_post_favorite_parser() -> Namespace:
+	parser = reqparse.RequestParser()
+
+	parser.add_argument("user_id", type=int, required=True, help="User_id field (int) required")
+	parser.add_argument("place_id", type=int, required=True, help="Place_id field (int) required")
+
+	return parser.parse_args()
+
+
 ###############################################################################
 ######################### Models Blueprints Parsers ###########################
 ###############################################################################

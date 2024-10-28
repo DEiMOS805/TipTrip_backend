@@ -21,9 +21,12 @@ class Download(Resource):
 		logger.debug(f"Downloading instaler file with tag {os}...")
 		try:
 			if os == "android":
-				return send_from_directory(APPS_ABSPATH, "tiptrip.apk", as_attachment=True)
+				filename: str = "tiptrip.apk"
 			else:
-				return send_from_directory(APPS_ABSPATH, "tiptrip.ipa", as_attachment=True)
+				filename: str = "tiptrip.ipa"
+
+			logger.debug(f"Sending installer file {filename} to the client...")
+			return send_from_directory(APPS_ABSPATH, filename, as_attachment=True)
 
 		except Exception as e:
 			logger.error(f"Error while downloading installer file: {e}")

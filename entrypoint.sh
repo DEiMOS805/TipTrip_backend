@@ -1,7 +1,9 @@
 #!/bin/bash
 
-# Wait for the database to be ready
+# Environment variables
 export FLASK_APP=app
+
+# Run database migrations
 flask db init
 flask db migrate
 flask db upgrade
