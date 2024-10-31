@@ -9,13 +9,13 @@ swagger_template: dict[str, Any] = {
 		"title": "Tip Trip",
 		"version": "1.0.0"
 	},
-	# "servers": [
-	# 	{ "url": "http://localhost:5000" },
-	# 	{ "url": "http://example.com:5000" }
-	# ],
+	"servers": [
+		{ "url": "http://145.223.74.225:5000/" }
+	],
 	"tags": [
 		{ "name": "General", "description": "Endpoints for general purposes" },
 		{ "name": "Places", "description": "Places CRUD operations" },
+		{ "name": "Favorites", "description": "Favorites saved places by users" },
 		{ "name": "Users", "description": "Users CRUD operations" },
 		{ "name": "Models", "description": "Artificial intelligence models operations" }
 	],
@@ -405,6 +405,20 @@ swagger_template: dict[str, Any] = {
 							}
 						}
 					},
+					"403": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Failed" },
+										"message": { "type": "string", "example": "Unauthorized" }
+									}
+								}
+							}
+						}
+					},
 					"409": {
 						"description": "Place already exists",
 						"content": {
@@ -438,7 +452,7 @@ swagger_template: dict[str, Any] = {
 				"security": [{ "bearerAuth": [] }]
 			},
 		},
-		"/places/{id}" : {
+		"/places/{id}": {
 			"get": {
 				"tags": ["Places"],
 				"summary": "Retrieves a place by its ID",
@@ -671,6 +685,20 @@ swagger_template: dict[str, Any] = {
 							}
 						}
 					},
+					"403": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Failed" },
+										"message": { "type": "string", "example": "Unauthorized" }
+									}
+								}
+							}
+						}
+					},
 					"404": {
 						"description": "Place not found",
 						"content": {
@@ -745,6 +773,20 @@ swagger_template: dict[str, Any] = {
 							}
 						}
 					},
+					"403": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Failed" },
+										"message": { "type": "string", "example": "Unauthorized" }
+									}
+								}
+							}
+						}
+					},
 					"404": {
 						"description": "Place not found",
 						"content": {
@@ -754,6 +796,310 @@ swagger_template: dict[str, Any] = {
 									"properties": {
 										"status": { "type": "string", "example": "Failed" },
 										"message": { "type": "string", "example": "Place not found" }
+									}
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Internal Server Error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Failed" },
+										"message": { "type": "string", "example": GENERAL_ERROR_MESSAGE },
+										"error_code": { "type": "string", "example": "TT.500" }
+									}
+								}
+							}
+						}
+					}
+				},
+				"security": [{ "bearerAuth": [] }]
+			}
+		},
+		"/users/favorites": {
+			"get": {
+				"tags": ["Favorites"],
+				"summary": "Retrieves all favorite places saved by all users",
+				"description": "Retrieves all favorite places saved by all users.",
+				"responses": {
+					"200": {
+						"description": "All favorites places retrieved successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Success" },
+										"message": { "type": "string", "example": "All favorites places retrieved successfully" },
+										"favorites": {
+											"type": "array",
+											"items": { "$ref": "#/components/schemas/AllFavorites" }
+										}
+									}
+								}
+							}
+						}
+					},
+					"204": {
+						"description": "Successfully but no data found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Success" },
+										"message": { "type": "string", "example": "No data found" }
+									}
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Failed" },
+										"message": { "type": "string", "example": "Unauthorized" }
+									}
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Internal Server Error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Failed" },
+										"message": { "type": "string", "example": GENERAL_ERROR_MESSAGE },
+										"error_code": { "type": "string", "example": "TT.500" }
+									}
+								}
+							}
+						}
+					}
+				},
+				"security": [{ "bearerAuth": [] }]
+			},
+			"post": {
+				"tags": ["Favorites"],
+				"summary": "Creates a new favorite place for a single user",
+				"description": "Creates a new favorite place for a single user using the provided ids",
+				"parameters": [
+					{
+						"name": "user_id",
+						"required": True,
+						"in": "body",
+						"schema": { "type": "number", "format": "int64", "example": 1 }
+					},
+					{
+						"name": "place_id",
+						"required": True,
+						"in": "body",
+						"schema": { "type": "number", "format": "int64", "example": 1 }
+					},
+				],
+				"responses": {
+					"201": {
+						"description": "Favorite place created successfully for given user",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Success" },
+										"message": { "type": "string", "example": "Favorite place created successfully for given user" },
+										"favorite": {
+											"type": "object",
+											"properties": {
+												"user_id": { "type": "integer", "format": "int64", "example": 1 },
+												"place_id": { "type": "integer", "format": "int64", "example": 1 }
+											}
+										}
+									}
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "User or place not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Failed" },
+										"message": { "type": "string", "example": "User not found" }
+									}
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Favorite place already exists for given user",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Failed" },
+										"message": { "type": "string", "example": "Favorite place already exists for given user" }
+									}
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Internal Server Error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Failed" },
+										"message": { "type": "string", "example": GENERAL_ERROR_MESSAGE },
+										"error_code": { "type": "string", "example": "TT.500" }
+									}
+								}
+							}
+						}
+					}
+				},
+				"security": [{ "bearerAuth": [] }]
+			}
+		},
+		"/users/favorites/{id}": {
+			"get": {
+				"tags": ["Favorites"],
+				"summary": "Retrieves all favorite places saved by a given user",
+				"description": "Retrieves all favorite places saved by only the given user id.",
+				"parameters": [
+					{
+						"name": "id",
+						"required": True,
+						"in": "path",
+						"schema": { "type": "number", "format": "int64", "example": 1 }
+					},
+				],
+				"responses": {
+					"200": {
+						"description": "Favorite places retrieved successfully for given user",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Success" },
+										"message": { "type": "string", "example": "Favorite places retrieved successfully for given user" },
+										"user_id": { "type": "integer", "format": "int64", "example": 1 },
+										"favorites": {
+											"type": "array",
+											"items": { "$ref": "#/components/schemas/Favorite" }
+										}
+									}
+								}
+							}
+						}
+					},
+					"204": {
+						"description": "Successfully but no data found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Success" },
+										"message": { "type": "string", "example": "No data found" }
+									}
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "User not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Failed" },
+										"message": { "type": "string", "example": "User not found" }
+									}
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Internal Server Error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Failed" },
+										"message": { "type": "string", "example": GENERAL_ERROR_MESSAGE },
+										"error_code": { "type": "string", "example": "TT.500" }
+									}
+								}
+							}
+						}
+					}
+				},
+				"security": [{ "bearerAuth": [] }]
+			},
+		},
+		"/users/favorites/{id_user}/{id_place}": {
+			"delete": {
+				"tags": ["Users"],
+				"summary": "Deletes a user's favorite place",
+				"description": "Deletes a user's favorite place using the provided ids.",
+				"parameters": [
+					{
+						"name": "id_user",
+						"required": True,
+						"in": "path",
+						"schema": { "type": "integer", "format": "int64", "example": 1 }
+					},
+					{
+						"name": "id_place",
+						"required": True,
+						"in": "path",
+						"schema": { "type": "integer", "format": "int64", "example": 1 }
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "User's favorite place deleted successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Success" },
+										"message": { "type": "string", "example": "User's favorite place deleted successfully" }
+									}
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "User or place not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Failed" },
+										"message": { "type": "string", "example": "User not found" }
 									}
 								}
 							}
@@ -811,6 +1157,20 @@ swagger_template: dict[str, Any] = {
 									"properties": {
 										"status": { "type": "string", "example": "Success" },
 										"message": { "type": "string", "example": "No data found" }
+									}
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Failed" },
+										"message": { "type": "string", "example": "Unauthorized" }
 									}
 								}
 							}
@@ -1360,6 +1720,39 @@ swagger_template: dict[str, Any] = {
 					},
 					"created_at": { "type": "string", "format": "date-time", "example": "2024-01-01T10:00:00Z" },
 					"distance": { "type": "number", "format": "float", "example": 1.5 }
+				}
+			},
+			"AllFavorites": {
+				"type": "object",
+				"properties": {
+					"user": {
+						"type": "object",
+						"properties": {
+							"id": { "type": "integer", "format": "int64", "example": 1 },
+							"username": { "type": "string", "example": "Juan Perez" },
+							"mail": { "type": "string", "example": "example@example.com" }
+						}
+					},
+					"favorites": {
+						"type": "object",
+						"properties": {
+							"id": { "type": "integer", "format": "int64", "example": 1 },
+							"name": { "type": "string", "example": "Central Park" },
+							"classification": { "type": "string", "example": "Park" },
+							"punctuation": { "type": "number", "format": "float", "example": 4.5 },
+							"created_at": { "type": "string", "format": "date-time", "example": "2024-01-01T10:00:00Z" }
+						}
+					}
+				}
+			},
+			"Favorite": {
+				"type": "object",
+				"properties": {
+					"id": { "type": "integer", "format": "int64", "example": 1 },
+					"name": { "type": "string", "example": "Central Park" },
+					"classification": { "type": "string", "example": "Park" },
+					"punctuation": { "type": "number", "format": "float", "example": 4.5 },
+					"created_at": { "type": "string", "format": "date-time", "example": "2024-01-01T10:00:00Z" }
 				}
 			},
 			"User": {

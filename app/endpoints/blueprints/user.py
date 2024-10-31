@@ -409,7 +409,8 @@ class UserFavoriteList(Resource):
 					"id": favorite.place.id,
 					"name": favorite.place.name,
 					"classification": favorite.place.classification,
-					"punctuation": favorite.place.punctuation
+					"punctuation": favorite.place.punctuation,
+					"created_at": favorite.created_at
 				})
 
 			result: list = list(result.values())
@@ -425,7 +426,7 @@ class UserFavoriteList(Resource):
 		logger.debug("Returning favorites...")
 		return make_response(jsonify({
 			"status": "Success",
-			"message": "Favorites retrieved successfully",
+			"message": "All favorites places retrieved successfully",
 			"favorites": result
 		}), 200)
 
@@ -477,32 +478,32 @@ class UserFavoriteList(Resource):
 				}), 409)
 
 		except Exception as e:
-			logger.error(f"Error checking if favorite exists: {e}. Aborting request...")
+			logger.error(f"Error checking if favorite place exists: {e}. Aborting request...")
 			return make_response(jsonify({
 				"status": "Failed",
-				"message": "An error occurred while checking favorite existence.",
+				"message": "An error occurred while checking favorite place existence.",
 				"error_code": "TT.500"
 			}), 500)
 
 		# Crear nuevo favorito
-		logger.debug("Creating new favorite...")
+		logger.debug("Creating new favorite place...")
 		try:
 			new_favorite = Favorite(id_user=args["user_id"], id_place=args["place_id"])
 			db.session.add(new_favorite)
 			db.session.commit()
 
 		except Exception as e:
-			logger.error(f"Error creating new favorite: {e}. Aborting request...")
+			logger.error(f"Error creating new favorite place: {e}. Aborting request...")
 			return make_response(jsonify({
 				"status": "Failed",
-				"message": "An error occurred while creating the favorite.",
+				"message": "An error occurred while creating the favorite place.",
 				"error_code": "TT.500"
 			}), 500)
 
-		logger.debug("Favorite created successfully")
+		logger.debug("Favorite place created successfully")
 		return make_response(jsonify({
 			"status": "Success",
-			"message": "Favorite added successfully",
+			"message": "Favorite place created successfully for given user",
 			"favorite": {
 				"user_id": new_favorite.id_user,
 				"place_id": new_favorite.id_place
@@ -545,7 +546,7 @@ class UserFavoriteDetail(Resource):
 				"message": "No data found"
 			}), 204)
 
-		logger.debug("Serializing favorites...")
+		logger.debug("Serializing favorite places...")
 		result: list = []
 		try:
 			for favorite in favorites:
@@ -553,21 +554,22 @@ class UserFavoriteDetail(Resource):
 					"id": favorite.place.id,
 					"name": favorite.place.name,
 					"classification": favorite.place.classification,
-					"punctuation": favorite.place.punctuation
+					"punctuation": favorite.place.punctuation,
+					"created_at": favorite.created_at
 				})
 
 		except Exception as e:
-			logger.error(f"Error serializing favorites: {e}. Aborting request...")
+			logger.error(f"Error serializing favorite places: {e}. Aborting request...")
 			return make_response(jsonify({
 				"status": "Failed",
 				"message": GENERAL_ERROR_MESSAGE,
 				"error_code": "TT.500"
 			}), 500)
 
-		logger.debug("Returning favorites...")
+		logger.debug("Returning favorite places...")
 		return make_response(jsonify({
 			"status": "Success",
-			"message": "Favorites retrieved successfully",
+			"message": "Favorite places retrieved successfully for given user",
 			"user_id": id,
 			"favorites": result
 		}), 200)
