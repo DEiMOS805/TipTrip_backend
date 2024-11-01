@@ -8,17 +8,13 @@ from flasgger import Swagger
 from flask_restful import Api
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
+from werkzeug.exceptions import HTTPException
 from flask.wrappers import Response as WrapperResponse
 from flask import Flask, Response, make_response, jsonify
-
-from werkzeug.exceptions import HTTPException
-from jwt.exceptions import ExpiredSignatureError, InvalidSignatureError
-from flask_jwt_extended.exceptions import NoAuthorizationError, InvalidHeaderError, RevokedTokenError, UserLookupError
 
 from app.resources.config import *
 from app.resources.database import db
 from app.resources.swagger_template import swagger_template
-# from app.resources.error_handlers import set_error_handlers
 
 from app.endpoints.home import Home
 from app.endpoints.download import Download
@@ -52,7 +48,7 @@ def create_app() -> Flask:
 	swagger: Swagger = Swagger(app, template=swagger_template)
 
 	# Flask configurations
-	app.config["PROPAGATE_EXCEPTIONS"] = False
+	app.config["PROPAGATE_EXCEPTIONS"] = True
 
 	# JWT configurations
 	app.config["JWT_SECRET_KEY"] = getenv("JWT_SECRET_KEY")
@@ -76,72 +72,40 @@ def create_app() -> Flask:
 	############################ Set error handlers ###########################
 	###########################################################################
 
-	# set_error_handlers(app, jwt)
-
-	@jwt.unauthorized_loader
-	def handle_unauthorized_token(e) -> Response:
-		return make_response(jsonify({
-			"status": "Failed",
-			"message": "Unauthorized token",
-			"error_code": "TT.401"
-		}), 401)
-
 	@app.errorhandler(HTTPException)
 	def not_found_error_handler(error: HTTPException) -> Response:
-		""" Function that handles the error 404 """
 		return make_response(jsonify({
 			"status": "Failed",
-			"message": "Resource not found",
-			"error_code": "TT.404"
+			"message": "Resource not found"
 		}), 404)
 
-	@app.errorhandler(ExpiredSignatureError)
-	def handle_expired_token(error: ExpiredSignatureError) -> Response:
+	@jwt.unauthorized_loader
+	def unauthorized_loader_error_handler(reason) -> Response:
 		return make_response(jsonify({
 			"status": "Failed",
-			"message": "Token already expired",
-			"error_code": "TT.401"
+			"message": reason
 		}), 401)
 
-	@app.errorhandler(InvalidSignatureError)
-	def handle_invalid_signature(error: InvalidSignatureError) -> Response:
+	@jwt.expired_token_loader
+	def expired_token_error_handler(jwt_header, jwt_payload) -> Response:
 		return make_response(jsonify({
 			"status": "Failed",
-			"message": "Invalid token signature",
-			"error_code": "TT.401"
+			"message": "Token has expired"
 		}), 401)
 
-	@app.errorhandler(InvalidHeaderError)
-	def handle_invalid_token(error: InvalidHeaderError) -> Response:
+	@jwt.invalid_token_loader
+	def invalid_token_error_handler(error) -> Response:
 		return make_response(jsonify({
 			"status": "Failed",
-			"message": "Invalid token",
-			"error_code": "TT.401"
+			"message": "Invalid token"
 		}), 401)
 
-	@app.errorhandler(NoAuthorizationError)
-	def handle_missing_token(error: NoAuthorizationError) -> Response:
+	@jwt.revoked_token_loader
+	def revoked_token_error_handler(jwt_header, jwt_payload) -> Response:
 		return make_response(jsonify({
 			"status": "Failed",
-			"message": "Missing token",
-			"error_code": "TT.401"
+			"message": "Token has been revoked"
 		}), 401)
-
-	@app.errorhandler(RevokedTokenError)
-	def handle_revoked_token(error: RevokedTokenError) -> Response:
-		return make_response(jsonify({
-			"status": "Failed",
-			"message": "Token revoked",
-			"error_code": "TT.401"
-		}), 401)
-
-	@app.errorhandler(UserLookupError)
-	def handle_user_lookup_error(error: UserLookupError) -> Response:
-		return make_response(jsonify({
-			"status": "Failed",
-			"message": "User not found",
-			"error_code": "TT.404"
-		}), 404)
 
 	###########################################################################
 	####################### Add routes and blueprints #########################

@@ -1059,7 +1059,7 @@ swagger_template: dict[str, Any] = {
 		},
 		"/users/favorites/{id_user}/{id_place}": {
 			"delete": {
-				"tags": ["Users"],
+				"tags": ["Favorites"],
 				"summary": "Deletes a user's favorite place",
 				"description": "Deletes a user's favorite place using the provided ids.",
 				"parameters": [
