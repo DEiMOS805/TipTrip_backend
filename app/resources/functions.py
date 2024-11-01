@@ -77,7 +77,7 @@ def speech_recognition() -> str:
 
 #!Agente conversacional
 
-#!agente = AgenteConversacional()
+agente = AgenteConversacional(tts_function=tts_func)
 
 def consultar_agente(pregunta: str) -> dict:
 	respuesta = agente.consultar_agente(pregunta)
