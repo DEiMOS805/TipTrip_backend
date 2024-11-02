@@ -6,7 +6,7 @@ from werkzeug.exceptions import NotFound
 from sqlalchemy.exc import IntegrityError
 from flask_restful.reqparse import Namespace
 from flask import Blueprint, Response, make_response, jsonify
-from flask_jwt_extended import jwt_required, create_access_token
+from flask_jwt_extended import jwt_required, get_jwt, create_access_token
 
 from app.resources.parsers import *
 from app.resources.database import db
@@ -25,6 +25,18 @@ class UserList(Resource):
 	@jwt_required()
 	def get(self) -> Response:
 		logger.debug("Getting all users...")
+
+		logger.info("Checking user permissions...")
+		jwt_data: dict = get_jwt()
+		is_admin: bool = jwt_data["sub"]["is_admin"]
+		if not is_admin:
+			logger.error("Forbidden access for given user. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": "Forbidden access",
+				"error_code": "TT.D403"
+			}), 403)
+
 		try:
 			users: list = User.query.all()
 
@@ -113,6 +125,8 @@ class UserList(Resource):
 
 		except Exception as e:
 			logger.error(f"Error creating new user: {e}. Aborting request...")
+			db.session.rollback()
+
 			return make_response(jsonify({
 				"status": "Failed",
 				"message": GENERAL_ERROR_MESSAGE,
@@ -229,6 +243,8 @@ class UserDetail(Resource):
 
 		except IntegrityError as e:
 			logger.error(f"Error committing changes: {e}. Aborting request...")
+			db.session.rollback()
+
 			return make_response(jsonify({
 				"status": "Failed",
 				"message": "User's mail already exists",
@@ -237,6 +253,8 @@ class UserDetail(Resource):
 
 		except Exception as e:
 			logger.error(f"Error committing changes: {e}. Aborting request...")
+			db.session.rollback()
+
 			return make_response(jsonify({
 				"status": "Failed",
 				"message": GENERAL_ERROR_MESSAGE,
@@ -281,6 +299,8 @@ class UserDetail(Resource):
 
 		except Exception as e:
 			logger.error(f"Error deleting user: {e}. Aborting request...")
+			db.session.rollback()
+
 			return make_response(jsonify({
 				"status": "Failed",
 				"message": GENERAL_ERROR_MESSAGE,
@@ -350,6 +370,7 @@ class UserAuth(Resource):
 				"id": user.id,
 				"username": user.username,
 				"mail": user.mail,
+				"is_admin": user.is_admin,
 				"created_at": user.created_at
 			},
 			expires_delta=expires
@@ -370,6 +391,17 @@ class UserFavoriteList(Resource):
 	@jwt_required()
 	def get(self) -> Response:
 		logger.debug("Getting all users favorites places...")
+
+		logger.info("Checking user permissions...")
+		jwt_data: dict = get_jwt()
+		is_admin: bool = jwt_data["sub"]["is_admin"]
+		if not is_admin:
+			logger.error("Forbidden access for given user. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": "Forbidden access",
+				"error_code": "TT.D403"
+			}), 403)
 
 		try:
 			favorites: list = Favorite.query.all()
@@ -494,6 +526,8 @@ class UserFavoriteList(Resource):
 
 		except Exception as e:
 			logger.error(f"Error creating new favorite place: {e}. Aborting request...")
+			db.session.rollback()
+
 			return make_response(jsonify({
 				"status": "Failed",
 				"message": "An error occurred while creating the favorite place.",
@@ -519,6 +553,7 @@ class UserFavoriteDetail(Resource):
 		logger.debug("Checking if user exists...")
 		try:
 			user: User = User.query.get_or_404(id)
+			del user.password
 
 		except NotFound:
 			logger.error("User not found. Aborting request...")
@@ -607,6 +642,8 @@ class UserFavoriteDelete(Resource):
 
 		except Exception as e:
 			logger.error(f"Error deleting user's favorite place: {e}. Aborting request...")
+			db.session.rollback()
+
 			return make_response(jsonify({
 				"status": "Failed",
 				"message": GENERAL_ERROR_MESSAGE,

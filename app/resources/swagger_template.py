@@ -406,14 +406,14 @@ swagger_template: dict[str, Any] = {
 						}
 					},
 					"403": {
-						"description": "Unauthorized",
+						"description": "Forbidden access",
 						"content": {
 							"application/json": {
 								"schema": {
 									"type": "object",
 									"properties": {
 										"status": { "type": "string", "example": "Failed" },
-										"message": { "type": "string", "example": "Unauthorized" }
+										"message": { "type": "string", "example": "Forbidden access" }
 									}
 								}
 							}
@@ -686,14 +686,14 @@ swagger_template: dict[str, Any] = {
 						}
 					},
 					"403": {
-						"description": "Unauthorized",
+						"description": "Forbidden access",
 						"content": {
 							"application/json": {
 								"schema": {
 									"type": "object",
 									"properties": {
 										"status": { "type": "string", "example": "Failed" },
-										"message": { "type": "string", "example": "Unauthorized" }
+										"message": { "type": "string", "example": "Forbidden access" }
 									}
 								}
 							}
@@ -774,14 +774,14 @@ swagger_template: dict[str, Any] = {
 						}
 					},
 					"403": {
-						"description": "Unauthorized",
+						"description": "Forbidden access",
 						"content": {
 							"application/json": {
 								"schema": {
 									"type": "object",
 									"properties": {
 										"status": { "type": "string", "example": "Failed" },
-										"message": { "type": "string", "example": "Unauthorized" }
+										"message": { "type": "string", "example": "Forbidden access" }
 									}
 								}
 							}
@@ -859,14 +859,14 @@ swagger_template: dict[str, Any] = {
 						}
 					},
 					"403": {
-						"description": "Unauthorized",
+						"description": "Forbidden access",
 						"content": {
 							"application/json": {
 								"schema": {
 									"type": "object",
 									"properties": {
 										"status": { "type": "string", "example": "Failed" },
-										"message": { "type": "string", "example": "Unauthorized" }
+										"message": { "type": "string", "example": "Forbidden access" }
 									}
 								}
 							}
@@ -1163,14 +1163,14 @@ swagger_template: dict[str, Any] = {
 						}
 					},
 					"403": {
-						"description": "Unauthorized",
+						"description": "Forbidden access",
 						"content": {
 							"application/json": {
 								"schema": {
 									"type": "object",
 									"properties": {
 										"status": { "type": "string", "example": "Failed" },
-										"message": { "type": "string", "example": "Unauthorized" }
+										"message": { "type": "string", "example": "Forbidden access" }
 									}
 								}
 							}

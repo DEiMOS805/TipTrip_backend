@@ -4,8 +4,8 @@ from sqlalchemy.orm.query import Query
 from flask_restful import Api, Resource
 from werkzeug.exceptions import NotFound
 from sqlalchemy.exc import IntegrityError
-from flask_jwt_extended import jwt_required
 from flask_restful.reqparse import Namespace
+from flask_jwt_extended import jwt_required, get_jwt
 from flask import Blueprint, Response, make_response, jsonify
 
 from app.resources.database import db
@@ -144,6 +144,17 @@ class PlaceList(Resource):
 	def post(self) -> Response:
 		logger.debug("Adding new place...")
 
+		logger.info("Checking user permissions...")
+		jwt_data: dict = get_jwt()
+		is_admin: bool = jwt_data["sub"]["is_admin"]
+		if not is_admin:
+			logger.error("Forbidden access for given user. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": "Forbidden access",
+				"error_code": "TT.D403"
+			}), 403)
+
 		logger.debug("Checking request data...")
 		args: Namespace = create_post_place_parser()
 
@@ -186,8 +197,20 @@ class PlaceList(Resource):
 			db.session.add(new_place)
 			db.session.commit()
 
+		except IntegrityError as e:
+			logger.error(f"Error committing changes: {e}. Aborting request...")
+			db.session.rollback()
+
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": "Place's name already exists",
+				"error_code": "TT.D409"
+			}), 409)
+
 		except Exception as e:
 			logger.error(f"Error creating new place: {e}. Aborting request...")
+			db.session.rollback()
+
 			return make_response(jsonify({
 				"status": "Failed",
 				"message": GENERAL_ERROR_MESSAGE,
@@ -212,6 +235,8 @@ class PlaceList(Resource):
 
 		except Exception as e:
 			logger.error(f"Error creating new place's address: {e}. Aborting request...")
+			db.session.rollback()
+
 			return make_response(jsonify({
 				"status": "Failed",
 				"message": GENERAL_ERROR_MESSAGE,
@@ -230,6 +255,8 @@ class PlaceList(Resource):
 
 		except Exception as e:
 			logger.error(f"Error creating new place's review: {e}. Aborting request...")
+			db.session.rollback()
+
 			return make_response(jsonify({
 				"status": "Failed",
 				"message": GENERAL_ERROR_MESSAGE,
@@ -324,6 +351,17 @@ class PlaceDetail(Resource):
 	def put(self, id: int) -> Response:
 		logger.debug(f"Updating place with id {id}...")
 
+		logger.info("Checking user permissions...")
+		jwt_data: dict = get_jwt()
+		is_admin: bool = jwt_data["sub"]["is_admin"]
+		if not is_admin:
+			logger.error("Forbidden access for given user. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": "Forbidden access",
+				"error_code": "TT.D403"
+			}), 403)
+
 		logger.debug("Checking request data...")
 		args: Namespace = create_put_place_parser()
 
@@ -405,6 +443,8 @@ class PlaceDetail(Resource):
 
 		except IntegrityError as e:
 			logger.error(f"Error committing changes: {e}. Aborting request...")
+			db.session.rollback()
+
 			return make_response(jsonify({
 				"status": "Failed",
 				"message": "Place's name already exists",
@@ -413,6 +453,8 @@ class PlaceDetail(Resource):
 
 		except Exception as e:
 			logger.error(f"Error committing changes: {e}. Aborting request...")
+			db.session.rollback()
+
 			return make_response(jsonify({
 				"status": "Failed",
 				"message": GENERAL_ERROR_MESSAGE,
@@ -429,6 +471,17 @@ class PlaceDetail(Resource):
 	@jwt_required()
 	def delete(self, id: int) -> Response:
 		logger.debug(f"Deleting place with id {id}...")
+
+		logger.info("Checking user permissions...")
+		jwt_data: dict = get_jwt()
+		is_admin: bool = jwt_data["sub"]["is_admin"]
+		if not is_admin:
+			logger.error("Forbidden access for given user. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": "Forbidden access",
+				"error_code": "TT.D403"
+			}), 403)
 
 		logger.debug("Checking if place exists...")
 		try:
@@ -457,6 +510,8 @@ class PlaceDetail(Resource):
 
 		except Exception as e:
 			logger.error(f"Error deleting place: {e}. Aborting request...")
+			db.session.rollback()
+
 			return make_response(jsonify({
 				"status": "Failed",
 				"message": GENERAL_ERROR_MESSAGE,
