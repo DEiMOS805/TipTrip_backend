@@ -3,6 +3,7 @@ from logging import Logger
 from vosk import SetLogLevel
 from os import getenv, environ
 from dotenv import load_dotenv
+from langchain.globals import set_debug
 
 from flasgger import Swagger
 from flask_restful import Api
@@ -61,6 +62,9 @@ def create_app() -> Flask:
 	# numba configurations
 	numba_logger: Logger = logging.getLogger("numba")
 	numba_logger.setLevel(logging.WARNING)
+
+	# Langchain configurations
+	set_debug(False)
 
 	# vosk configuration
 	SetLogLevel(-1)

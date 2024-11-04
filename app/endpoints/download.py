@@ -2,7 +2,7 @@ from flask_restful import Resource
 from logging import Logger, getLogger
 from flask import Response, send_from_directory, make_response, jsonify
 
-from app.resources.config import PROJECT_NAME, GENERAL_ERROR_MESSAGE, APPS_ABSPATH
+from app.resources.config import PROJECT_NAME, GENERAL_ERROR_MESSAGE, STATIC_ABSPATH
 
 
 logger: Logger = getLogger(f"{PROJECT_NAME}.download_endpoint")
@@ -26,7 +26,7 @@ class Download(Resource):
 				filename: str = "tiptrip.ipa"
 
 			logger.debug(f"Sending installer file {filename} to the client...")
-			return send_from_directory(APPS_ABSPATH, filename, as_attachment=True)
+			return send_from_directory(STATIC_ABSPATH, filename, as_attachment=True)
 
 		except Exception as e:
 			logger.error(f"Error while downloading installer file: {e}")

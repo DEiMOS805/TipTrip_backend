@@ -12,9 +12,11 @@ from cryptography.fernet import Fernet
 from vosk import Model, KaldiRecognizer
 
 from app.resources.config import *
+from app.resources.llm import AgenteConversacional
 
 
 load_dotenv(DOTENV_ABSPATH)
+agente = AgenteConversacional()
 
 
 ###############################################################################
@@ -57,9 +59,9 @@ def speech_recognition() -> str:
 		model = Model(model_path=VOSK_ABSPATH)
 		recognizer = KaldiRecognizer(model, SAMPLING_RATE)
 
-		results = []
+		results: list = []
 		while True:
-			data = file.readframes(FRAMES_FLOW)
+			data: bytes = file.readframes(FRAMES_FLOW)
 			if len(data) == 0:
 				break
 			if recognizer.AcceptWaveform(data):
@@ -69,12 +71,11 @@ def speech_recognition() -> str:
 		final_result = recognizer.FinalResult()
 		results.append(json.loads(final_result))
 
-		text: str = f"{' '.join([res['text'] for res in results])}."
-		return text
+		return f"{' '.join([res['text'] for res in results])}."
 
 
 def tts_func(text: str) -> dict:
-	tts = TTS(model_name=TTS_MODEL_NAME, progress_bar=False).to(DEVICE)
+	tts: TTS = TTS(model_name=TTS_MODEL_NAME, progress_bar=False).to(DEVICE)
 	tts.tts_to_file(
 		text=text,
 		speaker_wav="my/cloning/audio.wav",
@@ -93,7 +94,7 @@ def tts_func(text: str) -> dict:
 		audio = file.readframes(nframes)
 		audio_base64: str = b64encode(audio).decode("utf-8")
 
-	audio_data: dict = {
+	return {
 		"nchannels": nchannels,
 		"sampwidth": sampwidth,
 		"framerate": framerate,
@@ -104,4 +105,11 @@ def tts_func(text: str) -> dict:
 		"audio": audio_base64
 	}
 
-	return audio_data
+
+def consultar_agente(pregunta: str) -> dict:
+	agente_response_text: str = agente.consultar_agente(pregunta)
+
+	return {
+		"agent_response": agente_response_text,
+		"audio_data": tts_func(agente_response_text) # Generar el audio de la respuesta
+	}
