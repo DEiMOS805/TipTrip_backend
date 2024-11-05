@@ -1,11 +1,10 @@
-from os import getenv
-from os.path import join
-from dotenv import load_dotenv
-
 import wave
 import json
+from os import getenv
 from TTS.api import TTS
+from os.path import join
 from pyaudio import paInt16
+from dotenv import load_dotenv
 from base64 import b64encode
 from geopy.distance import geodesic
 from cryptography.fernet import Fernet
