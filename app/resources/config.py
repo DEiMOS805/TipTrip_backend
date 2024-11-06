@@ -20,6 +20,14 @@ LIBROSA_CACHE_DIR: str = "/tmp/librosa_cache"
 # TTS variables
 DEVICE: str = "cuda" if torch.cuda.is_available() else "cpu"
 TTS_MODEL_NAME: str = "tts_models/es/css10/vits"
+TEXT_REPLACEMENTS: dict[str, str] = {
+	'&': 'y',
+	'%': "por ciento",
+	'@': "arroba",
+	'°': "grados",
+	'€': "euros",
+	'¢': "centavo"
+}
 
 # Project paths
 PROJECT_DIR_ABSPATH: str = getcwd()

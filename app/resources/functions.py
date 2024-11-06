@@ -1,11 +1,13 @@
 import wave
 import json
+from re import sub
 from os import getenv
 from TTS.api import TTS
 from os.path import join
 from pyaudio import paInt16
-from dotenv import load_dotenv
 from base64 import b64encode
+from dotenv import load_dotenv
+from num2words import num2words
 from geopy.distance import geodesic
 from cryptography.fernet import Fernet
 from vosk import Model, KaldiRecognizer
@@ -73,7 +75,38 @@ def speech_recognition() -> str:
 		return f"{' '.join([res['text'] for res in results])}."
 
 
+def format_text(text: str) -> str:
+	for symbol, word in TEXT_REPLACEMENTS.items():
+		text = text.replace(symbol, word)
+
+	# Replace the symbol $ followed by a number, like "$50" or "$25", with "fifty pesos"
+	text = sub(r"\$(\d+)", lambda x: f"{num2words(int(x.group(1)), lang='es')} pesos", text)
+
+	# Replace numbers with words for other cases (without the $ symbol in front)
+	# This also converts numbers with decimals correctly
+	text = sub(r"\b\d+(\.\d+)?\b", lambda x: num2words(float(x.group()), lang="es").replace('.', " punto "), text)
+
+	text = text.replace("hrs.", "horas")
+
+	# Remove "http://", "https://", and "www." and replace "." with "punto" on URLs
+	text = sub(r"https?://(www\.)?([^/]+)", lambda x: x.group(2).replace('.', " punto "), text)
+	text = sub(r"\b([\w\-]+ punto [\w\-]+(?: punto [\w\-]+)?)(/.*)?\b(/)?", r"\1", text)
+
+	# Replace more special characters
+	text = text.replace(':', " dos puntos ") \
+		.replace('*', "") \
+		.replace(';', "") \
+		.replace('=', "") \
+		.replace('(', "").replace(')', "") \
+		.replace('[', "").replace(']', "") \
+		.replace('{', "").replace('}', "") \
+
+	return text
+
+
 def tts_func(text: str) -> dict:
+	text = format_text(text)
+
 	tts: TTS = TTS(model_name=TTS_MODEL_NAME, progress_bar=False).to(DEVICE)
 	tts.tts_to_file(
 		text=text,
@@ -82,15 +115,15 @@ def tts_func(text: str) -> dict:
 	)
 
 	with wave.open(join("/tmp", TEMP_FILE_NAME), "rb") as file:
-		nchannels = file.getnchannels()
-		sampwidth = file.getsampwidth()
-		framerate = file.getframerate()
-		nframes = file.getnframes()
-		comp_type = file.getcomptype()
-		comp_name = file.getcompname()
-		duration = nframes / float(framerate)
+		nchannels: int = file.getnchannels()
+		sampwidth: int = file.getsampwidth()
+		framerate: int = file.getframerate()
+		nframes: int = file.getnframes()
+		comp_type: str = file.getcomptype()
+		comp_name: str = file.getcompname()
+		duration: float = nframes / float(framerate)
 
-		audio = file.readframes(nframes)
+		audio: bytes = file.readframes(nframes)
 		audio_base64: str = b64encode(audio).decode("utf-8")
 
 	return {
@@ -106,9 +139,9 @@ def tts_func(text: str) -> dict:
 
 
 def consultar_agente(pregunta: str) -> dict:
-	agente_response_text: str = agente.consultar_agente(pregunta)
+	respuesta: str = agente.consultar_agente(pregunta)
 
 	return {
-		"agent_response": agente_response_text,
-		"audio_data": tts_func(agente_response_text) # Generar el audio de la respuesta
+		"text": respuesta,
+		"audio_data": tts_func(respuesta)
 	}
