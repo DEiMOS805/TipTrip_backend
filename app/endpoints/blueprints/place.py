@@ -9,7 +9,7 @@ from werkzeug.exceptions import NotFound
 from sqlalchemy.exc import IntegrityError
 from flask_restful.reqparse import Namespace
 from flask_jwt_extended import jwt_required, get_jwt
-from flask import Blueprint, Response, make_response, jsonify, request
+from flask import Blueprint, Response, make_response, jsonify
 
 from app.resources.config import *
 from app.resources.database import db
@@ -136,7 +136,6 @@ class PlaceList(Resource):
 			result.sort(key=lambda place: place["distance"])
 
 		logger.info("Checking favorite places...")
-
 		logger.debug("Checking if user exists...")
 		user_id: int = get_jwt()["sub"]["id"]
 		try:
@@ -395,6 +394,58 @@ class PlaceDetail(Resource):
 				"message": GENERAL_ERROR_MESSAGE,
 				"error_code": "TT.500"
 			}), 500)
+
+		logger.info("Checking favorite places...")
+		logger.debug("Checking if user exists...")
+		user_id: int = get_jwt()["sub"]["id"]
+		try:
+			user: User = User.query.get_or_404(user_id)
+
+		except NotFound:
+			logger.error("User not found. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": "User not found",
+				"error_code": "TT.D404"
+			}), 404)
+
+		except Exception as e:
+			logger.error(f"Error checking if user exists: {e}. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": GENERAL_ERROR_MESSAGE,
+				"error_code": "TT.500"
+			}), 500)
+
+		logger.debug("Getting user's favorite places...")
+		try:
+			favorites: list = Favorite.query.filter_by(id_user=user_id).all()
+
+		except Exception as e:
+			logger.error(f"Error getting user's favorite places: {e}. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": GENERAL_ERROR_MESSAGE,
+				"error_code": "TT.500"
+			}), 500)
+
+		if favorites is not None or favorites != []:
+			logger.debug("Serializing favorite places...")
+			try:
+				favorite_ids: list[dict] = [favorite.place.id for favorite in favorites]
+
+				if result["id"] in favorite_ids:
+					result["is_favorite"] = True
+				else:
+					result["is_favorite"] = False
+
+			except Exception as e:
+				logger.error(f"Error serializing favorite places: {e}. Aborting request...")
+				return make_response(jsonify({
+					"status": "Failed",
+					"message": GENERAL_ERROR_MESSAGE,
+					"error_code": "TT.500"
+				}), 500)
 
 		logger.debug("Returning place...")
 		return make_response(jsonify({
