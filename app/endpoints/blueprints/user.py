@@ -553,7 +553,6 @@ class UserFavoriteDetail(Resource):
 		logger.debug("Checking if user exists...")
 		try:
 			user: User = User.query.get_or_404(id)
-			del user.password
 
 		except NotFound:
 			logger.error("User not found. Aborting request...")
@@ -572,7 +571,16 @@ class UserFavoriteDetail(Resource):
 			}), 500)
 
 		logger.debug("Getting user's favorite places...")
-		favorites: list = Favorite.query.filter_by(id_user=id).all()
+		try:
+			favorites: list = Favorite.query.filter_by(id_user=id).all()
+
+		except Exception as e:
+			logger.error(f"Error getting user's favorite places: {e}. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": GENERAL_ERROR_MESSAGE,
+				"error_code": "TT.500"
+			}), 500)
 
 		if favorites is None or favorites == []:
 			logger.info("Request completed successfully but no data found")
@@ -589,6 +597,13 @@ class UserFavoriteDetail(Resource):
 					"id": favorite.place.id,
 					"name": favorite.place.name,
 					"classification": favorite.place.classification,
+					"address": (
+						f"{favorite.place.address.street_number}, "
+						f"{favorite.place.address.colony}, "
+						f"{favorite.place.address.cp}, "
+						f"{favorite.place.address.municipality}, "
+						f"{favorite.place.address.state}."
+					),
 					"punctuation": favorite.place.punctuation,
 					"created_at": favorite.created_at
 				})

@@ -1,4 +1,7 @@
+from os import getenv
 from typing import Any
+from dotenv import load_dotenv
+from requests import get, Response
 from logging import Logger, getLogger
 from sqlalchemy.orm.query import Query
 from flask_restful import Api, Resource
@@ -6,17 +9,16 @@ from werkzeug.exceptions import NotFound
 from sqlalchemy.exc import IntegrityError
 from flask_restful.reqparse import Namespace
 from flask_jwt_extended import jwt_required, get_jwt
-from flask import Blueprint, Response, make_response, jsonify
+from flask import Blueprint, Response, make_response, jsonify, request
 
+from app.resources.config import *
 from app.resources.database import db
 from app.resources.functions import get_place_distance
-from app.resources.models import Place, Review, Address
-from app.resources.config import PROJECT_NAME, GENERAL_ERROR_MESSAGE
-from app.resources.parsers import (
-	create_post_place_parser, create_put_place_parser, create_get_place_parser
-)
+from app.resources.models import Place, Review, Address, Favorite, User
+from app.resources.parsers import create_post_place_parser, create_put_place_parser, create_get_place_parser
 
 
+load_dotenv(DOTENV_ABSPATH)
 logger: Logger = getLogger(f"{PROJECT_NAME}.place_blueprint")
 
 place_blueprint: Blueprint = Blueprint("place", __name__)
@@ -132,6 +134,60 @@ class PlaceList(Resource):
 
 			logger.debug("Sorting places by distance...")
 			result.sort(key=lambda place: place["distance"])
+
+		logger.info("Checking favorite places...")
+
+		logger.debug("Checking if user exists...")
+		user_id: int = get_jwt()["sub"]["id"]
+		try:
+			user: User = User.query.get_or_404(user_id)
+
+		except NotFound:
+			logger.error("User not found. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": "User not found",
+				"error_code": "TT.D404"
+			}), 404)
+
+		except Exception as e:
+			logger.error(f"Error checking if user exists: {e}. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": GENERAL_ERROR_MESSAGE,
+				"error_code": "TT.500"
+			}), 500)
+
+		logger.debug("Getting user's favorite places...")
+		try:
+			favorites: list = Favorite.query.filter_by(id_user=user_id).all()
+
+		except Exception as e:
+			logger.error(f"Error getting user's favorite places: {e}. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": GENERAL_ERROR_MESSAGE,
+				"error_code": "TT.500"
+			}), 500)
+
+		if favorites is not None or favorites != []:
+			logger.debug("Serializing favorite places...")
+			try:
+				favorite_ids: list[dict] = [favorite.place.id for favorite in favorites]
+
+				for place in result:
+					if place["id"] in favorite_ids:
+						place["is_favorite"] = True
+					else:
+						place["is_favorite"] = False
+
+			except Exception as e:
+				logger.error(f"Error serializing favorite places: {e}. Aborting request...")
+				return make_response(jsonify({
+					"status": "Failed",
+					"message": GENERAL_ERROR_MESSAGE,
+					"error_code": "TT.500"
+				}), 500)
 
 		logger.debug("Returning places...")
 		return make_response(jsonify({
