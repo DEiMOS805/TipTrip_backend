@@ -8,7 +8,7 @@ from flask_restful.reqparse import Namespace
 from flask import Blueprint, Response, make_response, jsonify
 
 from app.resources.config import *
-from app.resources.functions import speech_recognition, consultar_agente
+from app.resources.functions import speech_recognition, consultar_agente, tts_func
 from app.resources.parsers import create_speech_recognition_model_parser, create_agent_model_parser
 
 
@@ -93,10 +93,24 @@ class Agent(Resource):
 
 		logger.debug("Procesing prompt with agent model...")
 		try:
-			agent_response: dict = consultar_agente(args["prompt"])
+			result: dict = {
+				"text": consultar_agente(args["prompt"])
+			}
 
 		except Exception as e:
 			logger.error(f"Error generating agent response {e}.\nAborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": GENERAL_ERROR_MESSAGE,
+				"error_code": "TT.500"
+			}), 500)
+
+		try:
+			if args["tts"]:
+				result["audio_data"] = tts_func(result["text"])
+
+		except Exception as e:
+			logger.error(f"Error during tts process: {e}.\nAborting request...")
 			return make_response(jsonify({
 				"status": "Failed",
 				"message": GENERAL_ERROR_MESSAGE,
@@ -107,7 +121,7 @@ class Agent(Resource):
 		return make_response(jsonify({
 			"status": "Success",
 			"message": "Agent response process completed successfully",
-			"agent_response": agent_response
+			"agent_response": result
 		}), 201)
 
 

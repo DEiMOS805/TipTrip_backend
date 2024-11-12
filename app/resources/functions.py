@@ -139,9 +139,4 @@ def tts_func(text: str) -> dict:
 
 
 def consultar_agente(pregunta: str) -> dict:
-	respuesta: str = agente.consultar_agente(pregunta)
-
-	return {
-		"text": respuesta,
-		"audio_data": tts_func(respuesta)
-	}
+	return agente.consultar_agente(pregunta)

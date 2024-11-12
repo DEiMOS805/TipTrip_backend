@@ -139,7 +139,7 @@ def create_post_favorite_parser() -> Namespace:
 def create_speech_recognition_model_parser() -> Namespace:
 	parser = reqparse.RequestParser()
 
-	parser.add_argument("audio", required=True, help="Mail field (str) required")
+	parser.add_argument("audio", required=True, help="Audio field (str) required")
 
 	return parser.parse_args()
 
@@ -148,5 +148,6 @@ def create_agent_model_parser() -> Namespace:
 	parser = reqparse.RequestParser()
 
 	parser.add_argument("prompt", required=True, help="Prompt field (str) required")
+	parser.add_argument("tts", required=True, type=bool, help="Tts field (boolean) required")
 
 	return parser.parse_args()
