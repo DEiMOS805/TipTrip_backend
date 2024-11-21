@@ -1,5 +1,5 @@
-from typing import Any, Optional
 from datetime import timedelta
+from typing import Any, Optional
 from logging import Logger, getLogger
 from flask_restful import Api, Resource
 from werkzeug.exceptions import NotFound
@@ -189,6 +189,54 @@ class UserDetail(Resource):
 			"message": "User queried successfully",
 			"user": result
 		}), 200)
+
+	@jwt_required()
+	def post(self, id: int) -> Response:
+		logger.debug(f"Adding coordinates for user with id {id}...")
+
+		logger.debug("Checking request data...")
+		args: Namespace = create_post_coordinates_parser()
+
+		logger.debug("Checking if user exists...")
+		try:
+			user: User = User.query.get_or_404(id)
+
+		except NotFound:
+			logger.error("User not found. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": "User not found",
+				"error_code": "TT.D404"
+			}), 404)
+
+		except Exception as e:
+			logger.error(f"Error checking if user exists: {e}. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": GENERAL_ERROR_MESSAGE,
+				"error_code": "TT.500"
+			}), 500)
+
+		logger.debug("Updating user's coordinates...")
+		try:
+			user.latitude = args["latitude"]
+			user.longitude = args["longitude"]
+			db.session.commit()
+
+		except Exception as e:
+			logger.error(f"Error updating user's coordinates: {e}. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": GENERAL_ERROR_MESSAGE,
+				"error_code": "TT.500"
+			}), 500)
+
+		logger.debug("Returning user id...")
+		return make_response(jsonify({
+			"status": "Success",
+			"message": "User's coordinates updated successfully",
+			"id": id
+		}), 201)
 
 	@jwt_required()
 	def put(self, id: int) -> Response:

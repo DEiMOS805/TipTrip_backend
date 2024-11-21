@@ -73,6 +73,8 @@ class User(db.Model):
 	mail = db.Column(db.String(50), unique=True, nullable=False)
 	password = db.Column(db.LargeBinary, nullable=False)
 	is_admin = db.Column(db.Boolean, default=False)
+	latitude = db.Column(db.Float, default=None)
+	longitude = db.Column(db.Float, default=None)
 	created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 	favorites = db.relationship("Favorite", backref="user", lazy=True)

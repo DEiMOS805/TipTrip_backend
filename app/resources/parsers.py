@@ -132,6 +132,15 @@ def create_post_favorite_parser() -> Namespace:
 	return parser.parse_args()
 
 
+def create_post_coordinates_parser() -> Namespace:
+	parser = reqparse.RequestParser()
+
+	parser.add_argument("latitude", required=True, type=float, help="Latitude field (float) required")
+	parser.add_argument("longitude", required=True, type=float, help="Longitude field (float) required")
+
+	return parser.parse_args()
+
+
 ###############################################################################
 ######################### Models Blueprints Parsers ###########################
 ###############################################################################

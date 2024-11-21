@@ -1,7 +1,7 @@
 from os import getenv
 from typing import Any
 from dotenv import load_dotenv
-from requests import get, Response
+from requests import Response
 from logging import Logger, getLogger
 from sqlalchemy.orm.query import Query
 from flask_restful import Api, Resource
@@ -12,10 +12,11 @@ from flask_jwt_extended import jwt_required, get_jwt
 from flask import Blueprint, Response, make_response, jsonify
 
 from app.resources.config import *
+from app.resources.parsers import *
 from app.resources.database import db
+from app.resources.agent import agente
 from app.resources.functions import get_place_distance
 from app.resources.models import Place, Review, Address, Favorite, User
-from app.resources.parsers import create_post_place_parser, create_put_place_parser, create_get_place_parser
 
 
 load_dotenv(DOTENV_ABSPATH)
@@ -326,6 +327,75 @@ class PlaceList(Resource):
 		}), 201)
 
 
+class CoordinatesAndRecommendations(Resource):
+	@jwt_required()
+	def get(self, id: int) -> Response:
+		logger.debug(f"Fetching recommendations based on user with id {id} coordinates...")
+
+		logger.debug("Checking if user exists...")
+		try:
+			user: User = User.query.get_or_404(id)
+
+		except NotFound:
+			logger.error("User not found. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": "User not found",
+				"error_code": "TT.D404"
+			}), 404)
+
+		except Exception as e:
+			logger.error(f"Error checking if user exists: {e}. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": GENERAL_ERROR_MESSAGE,
+				"error_code": "TT.500"
+			}), 500)
+
+		# Verificar si las coordenadas del usuario están registradas
+		if user.latitude is None or user.longitude is None:
+			logger.error("User coordinates are not registered. Aborting...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": "User coordinates are not registered."
+			}), 400)
+
+		try:
+			# Calcular recomendaciones
+			recommendations: str | list = agente.recomendar_sitios_cercanos(
+				lat=user.current_latitude,
+				lon=user.current_longitude,
+				radio_km=7
+			)
+
+		except Exception as e:
+			logger.error(f"Error fetching recommendations: {e}")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": "An error occurred while fetching recommendations."
+			}), 500)
+
+		if isinstance(recommendations, list):
+			if recommendations is None or recommendations == []:
+				logger.info("No places found within the specified radius")
+				return make_response(jsonify({
+					"status": "Success",
+					"message": "No places found within the specified radius"
+				}), 204)
+
+			else:
+				logger.info("Recommendations fetched successfully.")
+
+		else:
+			logger.warning("Got agent error message")
+
+		logger.info("Recommendations fetched successfully.")
+		return make_response(jsonify({
+			"status": "Success",
+			"recommendations": recommendations
+		}), 200)
+
+
 class PlaceDetail(Resource):
 	@jwt_required()
 	def get(self, id: int) -> Response:
@@ -634,3 +704,4 @@ class PlaceDetail(Resource):
 
 api.add_resource(PlaceList, '/')
 api.add_resource(PlaceDetail, "/<int:id>")
+api.add_resource(CoordinatesAndRecommendations, "/agent/<int:id>")

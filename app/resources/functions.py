@@ -13,11 +13,9 @@ from cryptography.fernet import Fernet
 from vosk import Model, KaldiRecognizer
 
 from app.resources.config import *
-from app.resources.llm import AgenteConversacional
 
 
 load_dotenv(DOTENV_ABSPATH)
-agente = AgenteConversacional()
 
 
 ###############################################################################
@@ -136,7 +134,3 @@ def tts_func(text: str) -> dict:
 		"duration": duration,
 		"audio": audio_base64
 	}
-
-
-def consultar_agente(pregunta: str) -> dict:
-	return agente.consultar_agente(pregunta)

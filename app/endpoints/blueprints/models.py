@@ -8,7 +8,8 @@ from flask_restful.reqparse import Namespace
 from flask import Blueprint, Response, make_response, jsonify
 
 from app.resources.config import *
-from app.resources.functions import speech_recognition, consultar_agente, tts_func
+from app.resources.agent import agente
+from app.resources.functions import speech_recognition, tts_func
 from app.resources.parsers import create_speech_recognition_model_parser, create_agent_model_parser
 
 
@@ -85,8 +86,8 @@ class SpeechRecognition(Resource):
 
 class Agent(Resource):
 	@jwt_required()
-	def post(self) -> Response:
-		logger.debug("Starting agent process...")
+	def post(self, id: int) -> Response:
+		logger.debug(f"Starting agent process for user with id {id}...")
 
 		logger.debug("Checking request data...")
 		args: Namespace = create_agent_model_parser()
@@ -94,7 +95,7 @@ class Agent(Resource):
 		logger.debug("Procesing prompt with agent model...")
 		try:
 			result: dict = {
-				"text": consultar_agente(args["prompt"])
+				"text": agente.consultar_agente(pregunta=args["prompt"], user_id=id),
 			}
 
 		except Exception as e:
@@ -126,4 +127,4 @@ class Agent(Resource):
 
 
 api.add_resource(SpeechRecognition, "/asr")
-api.add_resource(Agent, "/agent")
+api.add_resource(Agent, "/agent/<int:id>")
