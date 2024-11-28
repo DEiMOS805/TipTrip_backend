@@ -133,6 +133,13 @@ class PlaceList(Resource):
 			logger.debug("Filtering places by distance...")
 			result = [place for place in result if place["distance"] <= args["distance"]]
 
+			if result is None or result == []:
+				logger.info("Request completed successfully but no data found")
+				return make_response(jsonify({
+					"status": "Success",
+					"message": "No data found"
+				}), 204)
+
 			logger.debug("Sorting places by distance...")
 			result.sort(key=lambda place: place["distance"])
 
@@ -401,6 +408,30 @@ class PlaceDetail(Resource):
 	def get(self, id: int) -> Response:
 		logger.debug(f"Getting place with id {id}...")
 
+		logger.debug("Checking request data for user coordinates...")
+		args: Namespace = create_get_detail_place_parser()
+
+		logger.debug("Checking if user exists...")
+		user_id: int = get_jwt()["sub"]["id"]
+		try:
+			user: User = User.query.get_or_404(user_id)
+
+		except NotFound:
+			logger.error("User not found. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": "User not found",
+				"error_code": "TT.D404"
+			}), 404)
+
+		except Exception as e:
+			logger.error(f"Error checking if user exists: {e}. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": GENERAL_ERROR_MESSAGE,
+				"error_code": "TT.500"
+			}), 500)
+
 		try:
 			place: Place = Place.query.get_or_404(id)
 
@@ -465,28 +496,6 @@ class PlaceDetail(Resource):
 				"error_code": "TT.500"
 			}), 500)
 
-		logger.info("Checking favorite places...")
-		logger.debug("Checking if user exists...")
-		user_id: int = get_jwt()["sub"]["id"]
-		try:
-			user: User = User.query.get_or_404(user_id)
-
-		except NotFound:
-			logger.error("User not found. Aborting request...")
-			return make_response(jsonify({
-				"status": "Failed",
-				"message": "User not found",
-				"error_code": "TT.D404"
-			}), 404)
-
-		except Exception as e:
-			logger.error(f"Error checking if user exists: {e}. Aborting request...")
-			return make_response(jsonify({
-				"status": "Failed",
-				"message": GENERAL_ERROR_MESSAGE,
-				"error_code": "TT.500"
-			}), 500)
-
 		logger.debug("Getting user's favorite places...")
 		try:
 			favorites: list = Favorite.query.filter_by(id_user=user_id).all()
@@ -499,23 +508,50 @@ class PlaceDetail(Resource):
 				"error_code": "TT.500"
 			}), 500)
 
-		if favorites is not None or favorites != []:
-			logger.debug("Serializing favorite places...")
-			try:
-				favorite_ids: list[dict] = [favorite.place.id for favorite in favorites]
+		if favorites is None or favorites == []:
+			logger.info("Request completed successfully but no data found")
+			return make_response(jsonify({
+				"status": "Success",
+				"message": "No data found"
+			}), 204)
 
-				if result["id"] in favorite_ids:
-					result["is_favorite"] = True
-				else:
-					result["is_favorite"] = False
+		logger.debug("Serializing favorite places...")
+		try:
+			favorite_ids: list[dict] = [favorite.place.id for favorite in favorites]
+
+			if result["id"] in favorite_ids:
+				result["is_favorite"] = True
+			else:
+				result["is_favorite"] = False
+
+		except Exception as e:
+			logger.error(f"Error serializing favorite places: {e}. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": GENERAL_ERROR_MESSAGE,
+				"error_code": "TT.500"
+			}), 500)
+
+		if args["current_latitude"] is not None and args["current_longitude"] is not None:
+			try:
+				logger.debug("Calculating place distance from user...")
+
+				result["distance"] = get_place_distance(
+					(args["current_latitude"], args["current_longitude"]),
+					(result["address"]["latitude"], result["address"]["longitude"])
+				)
 
 			except Exception as e:
-				logger.error(f"Error serializing favorite places: {e}. Aborting request...")
+				logger.error(f"Error calculating place distance: {e}. Aborting request...")
 				return make_response(jsonify({
 					"status": "Failed",
 					"message": GENERAL_ERROR_MESSAGE,
 					"error_code": "TT.500"
 				}), 500)
+
+		else:
+			logger.debug("No current user coordinates provided...")
+			result["distance"] = None
 
 		logger.debug("Returning place...")
 		return make_response(jsonify({

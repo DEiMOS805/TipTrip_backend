@@ -10,9 +10,9 @@ from flask_jwt_extended import jwt_required, get_jwt, create_access_token
 
 from app.resources.parsers import *
 from app.resources.database import db
-from app.resources.functions import encrypt, decrypt
 from app.resources.models import User, Favorite, Place
 from app.resources.config import PROJECT_NAME, GENERAL_ERROR_MESSAGE
+from app.resources.functions import encrypt, decrypt, get_place_distance
 
 
 logger: Logger = getLogger(f"{PROJECT_NAME}.user_blueprint")
@@ -598,6 +598,9 @@ class UserFavoriteDetail(Resource):
 	def get(self, id: int) -> Response:
 		logger.debug(f"Getting all favorite places for user with id {id}...")
 
+		logger.debug("Checking request data for user coordinates...")
+		args: Namespace = create_get_favorite_parser()
+
 		logger.debug("Checking if user exists...")
 		try:
 			user: User = User.query.get_or_404(id)
@@ -653,7 +656,9 @@ class UserFavoriteDetail(Resource):
 						f"{favorite.place.address.state}."
 					),
 					"punctuation": favorite.place.punctuation,
-					"created_at": favorite.created_at
+					"created_at": favorite.created_at,
+					"latitude": favorite.place.address.latitude,
+					"longitude": favorite.place.address.longitude
 				})
 
 		except Exception as e:
@@ -663,6 +668,33 @@ class UserFavoriteDetail(Resource):
 				"message": GENERAL_ERROR_MESSAGE,
 				"error_code": "TT.500"
 			}), 500)
+
+		if args["current_latitude"] is not None and args["current_longitude"] is not None:
+			try:
+				logger.debug("Calculating places distances...")
+				for place in result:
+					place["distance"] = get_place_distance(
+						(args["current_latitude"], args["current_longitude"]),
+						(place["latitude"], place["longitude"])
+					)
+					del place["latitude"]
+					del place["longitude"]
+
+				logger.debug("Sorting places by distance...")
+				result.sort(key=lambda place: place["distance"])
+
+			except Exception as e:
+				logger.error(f"Error calculating places distance: {e}. Aborting request...")
+				return make_response(jsonify({
+					"status": "Failed",
+					"message": GENERAL_ERROR_MESSAGE,
+					"error_code": "TT.500"
+				}), 500)
+
+		else:
+			logger.debug("No current user coordinates provided...")
+			for place in result:
+				place["distance"] = None
 
 		logger.debug("Returning favorite places...")
 		return make_response(jsonify({

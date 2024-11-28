@@ -90,6 +90,14 @@ def create_put_place_parser() -> Namespace:
 	return parser.parse_args()
 
 
+def create_get_detail_place_parser() -> Namespace:
+	parser = reqparse.RequestParser()
+
+	parser.add_argument("current_latitude", type=float, required=True, help="Current_latitude field (float)")
+	parser.add_argument("current_longitude", type=float, required=True, help="Current_longitude field (float)")
+
+	return parser.parse_args()
+
 ###############################################################################
 ######################### Users Blueprints Parsers ############################
 ###############################################################################
@@ -123,6 +131,15 @@ def create_auth_user_parser() -> Namespace:
 	return parser.parse_args()
 
 
+def create_get_favorite_parser() -> Namespace:
+	parser = reqparse.RequestParser()
+
+	parser.add_argument("current_latitude", type=float, required=True, help="Current_latitude field (float)")
+	parser.add_argument("current_longitude", type=float, required=True, help="Current_longitude field (float)")
+
+	return parser.parse_args()
+
+
 def create_post_favorite_parser() -> Namespace:
 	parser = reqparse.RequestParser()
 
@@ -139,7 +156,6 @@ def create_post_coordinates_parser() -> Namespace:
 	parser.add_argument("longitude", required=True, type=float, help="Longitude field (float) required")
 
 	return parser.parse_args()
-
 
 ###############################################################################
 ######################### Models Blueprints Parsers ###########################
