@@ -131,6 +131,14 @@ def create_auth_user_parser() -> Namespace:
 	return parser.parse_args()
 
 
+def create_verify_user_parser() -> Namespace:
+	parser = reqparse.RequestParser()
+
+	parser.add_argument("mail", required=True, help="Mail field (str) required")
+
+	return parser.parse_args()
+
+
 def create_get_favorite_parser() -> Namespace:
 	parser = reqparse.RequestParser()
 

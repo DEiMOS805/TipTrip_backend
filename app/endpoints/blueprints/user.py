@@ -411,18 +411,27 @@ class UserAuth(Resource):
 				"error_code": "TT.D401"
 			}), 401)
 
-		logger.debug("Generating new JWT...")
-		expires: timedelta = timedelta(days=1)
-		access_token: str = create_access_token(
-			{
-				"id": user.id,
-				"username": user.username,
-				"mail": user.mail,
-				"is_admin": user.is_admin,
-				"created_at": user.created_at
-			},
-			expires_delta=expires
-		)
+		try:
+			logger.debug("Generating new JWT...")
+			expires: timedelta = timedelta(days=1)
+			access_token: str = create_access_token(
+				{
+					"id": user.id,
+					"username": user.username,
+					"mail": user.mail,
+					"is_admin": user.is_admin,
+					"created_at": user.created_at
+				},
+				expires_delta=expires
+			)
+
+		except Exception as e:
+			logger.error(f"Error generating new JWT: {e}. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": GENERAL_ERROR_MESSAGE,
+				"error_code": "TT.500"
+			}), 500)
 
 		logger.debug("Returning success message...")
 		return make_response(jsonify({
@@ -432,6 +441,64 @@ class UserAuth(Resource):
 			"token": access_token,
 			"username": user.username,
 			"created_at": user.created_at
+		}), 201)
+
+
+class UserVerify(Resource):
+	def get(self) -> Response:
+		logger.debug("Verifying user existence...")
+
+		logger.debug("Checking request data...")
+		args: Namespace = create_verify_user_parser()
+
+		logger.debug("Checking if user exists...")
+		try:
+			user: User = User.query.filter_by(mail=args["mail"]).first()
+
+		except Exception as e:
+			logger.error(f"Error checking if user exists: {e}. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": GENERAL_ERROR_MESSAGE,
+				"error_code": "TT.500"
+			}), 500)
+
+		if user is None or user == []:
+			logger.error("User not found. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": "User not found",
+				"error_code": "TT.D404"
+			}), 404)
+
+		try:
+			logger.debug("Generating new JWT...")
+			expires: timedelta = timedelta(days=1)
+			access_token: str = create_access_token(
+				{
+					"id": user.id,
+					"username": user.username,
+					"mail": user.mail,
+					"is_admin": user.is_admin,
+					"created_at": user.created_at
+				},
+				expires_delta=expires
+			)
+
+		except Exception as e:
+			logger.error(f"Error generating new JWT: {e}. Aborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": GENERAL_ERROR_MESSAGE,
+				"error_code": "TT.500"
+			}), 500)
+
+		logger.debug("Returning success message...")
+		return make_response(jsonify({
+			"status": "Success",
+			"message": "User authenticated successfully",
+			"id": user.id,
+			"token": access_token
 		}), 201)
 
 
@@ -754,6 +821,7 @@ class UserFavoriteDelete(Resource):
 
 api.add_resource(UserList, '/')
 api.add_resource(UserAuth, "/auth")
+api.add_resource(UserVerify, "/verify")
 api.add_resource(UserDetail, "/<int:id>")
 api.add_resource(UserFavoriteList, "/favorites")
 api.add_resource(UserFavoriteDetail, "/favorites/<int:id>")
