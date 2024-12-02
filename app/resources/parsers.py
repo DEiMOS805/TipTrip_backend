@@ -51,6 +51,9 @@ def create_post_place_parser() -> Namespace:
 	parser.add_argument("review", help="Review field (str)")
 	parser.add_argument("historic_review", help="Historic review field (str)")
 
+	# Image list field
+	parser.add_argument("images", type=str, action="append", required=True, help="Images field (list[str])")
+
 	return parser.parse_args()
 
 
@@ -86,6 +89,9 @@ def create_put_place_parser() -> Namespace:
 	# Review fields
 	parser.add_argument("review", help="Review field (str)")
 	parser.add_argument("historic_review", help="Historic review field (str)")
+
+	# Image list field
+	parser.add_argument("images", type=str, action="append", required=True, help="Images field (list[str])")
 
 	return parser.parse_args()
 

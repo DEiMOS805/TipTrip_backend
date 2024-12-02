@@ -557,6 +557,7 @@ class UserFavoriteList(Resource):
 					"name": favorite.place.name,
 					"classification": favorite.place.classification,
 					"punctuation": favorite.place.punctuation,
+					"image": favorite.place.images[0].image,
 					"created_at": favorite.created_at
 				})
 
