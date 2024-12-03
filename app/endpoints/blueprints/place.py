@@ -16,7 +16,7 @@ from app.resources.parsers import *
 from app.resources.database import db
 from app.resources.agent import agente
 from app.resources.functions import get_place_distance
-from app.resources.models import Place, Review, Address, Favorite, User, Image
+from app.resources.models import Place, Review, Address, Favorite, User
 
 
 load_dotenv(DOTENV_ABSPATH)
@@ -43,8 +43,7 @@ class PlaceList(Resource):
 
 			query: Query[Place] = db.session.query(Place) \
 				.outerjoin(Address, Address.id_place == Place.id) \
-				.outerjoin(Review, Review.id_place == Place.id) \
-				.outerjoin(Image, Image.id_place == Place.id)
+				.outerjoin(Review, Review.id_place == Place.id)
 
 			if filters != []:
 				query = query.filter(*filters)
@@ -102,7 +101,6 @@ class PlaceList(Resource):
 						"general": place.reviews.review,
 						"historic": place.reviews.historic_review
 					},
-					"images": [image.image for image in place.images],
 					"created_at": place.created_at
 				})
 
@@ -328,26 +326,6 @@ class PlaceList(Resource):
 				"error_code": "TT.500"
 			}), 500)
 
-		logger.debug("Creating new place's images...")
-		try:
-			for image in args["images"]:
-				new_images: Image = Image(
-					image=image,
-					id_place=new_place.id
-				)
-				db.session.add(new_images)
-			db.session.commit()
-
-		except Exception as e:
-			logger.error(f"Error creating new place's images: {e}. Aborting request...")
-			db.session.rollback()
-
-			return make_response(jsonify({
-				"status": "Failed",
-				"message": GENERAL_ERROR_MESSAGE,
-				"error_code": "TT.500"
-			}), 500)
-
 		logger.debug("Returning place id...")
 		return make_response(jsonify({
 			"status": "Success",
@@ -507,7 +485,6 @@ class PlaceDetail(Resource):
 					"general": place.reviews.review,
 					"historic": place.reviews.historic_review
 				},
-				"images": [image.image for image in place.images],
 				"created_at": place.created_at
 			}
 
@@ -672,31 +649,6 @@ class PlaceDetail(Resource):
 			place.reviews.review = args["review"]
 		if args["historic_review"]:
 			place.reviews.historic_review = args["historic_review"]
-
-		if args["images"]:
-			logger.info("Updating place images...")
-			try:
-				logger.info("Deleting old images...")
-				for image in place.images:
-					db.session.delete(image)
-
-				logger.info("Adding new images...")
-				for image in args["images"]:
-					new_image: Image = Image(
-						image=image,
-						id_place=place.id
-					)
-					db.session.add(new_image)
-
-			except Exception as e:
-				logger.error(f"Error updating place images: {e}. Aborting request...")
-				db.session.rollback()
-
-				return make_response(jsonify({
-					"status": "Failed",
-					"message": GENERAL_ERROR_MESSAGE,
-					"error_code": "TT.500"
-				}), 500)
 
 		logger.debug("Committing changes...")
 		try:

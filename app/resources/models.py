@@ -25,7 +25,6 @@ class Place(db.Model):
 
 	reviews = db.relationship("Review", backref="place", lazy=True, uselist=False)
 	address = db.relationship("Address", backref="place", lazy=True, uselist=False)
-	images = db.relationship("Image", backref="place", lazy=True)
 	favorites = db.relationship("Favorite", backref="place", lazy=True)
 
 	def __repr__(self) -> str:
@@ -64,19 +63,6 @@ class Address(db.Model):
 
 	def __repr__(self) -> str:
 		return f"Address(id={self.id}, id_place={self.id_place})"
-
-
-class Image(db.Model):
-	__tablename__: str = "images"
-
-	id = db.Column(db.Integer, primary_key=True)
-	image = db.Column(db.Text, nullable=False)
-	created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-	id_place = db.Column(db.Integer, db.ForeignKey("places.id"))
-
-	def __repr__(self) -> str:
-		return f"Images(id={self.id}, id_place={self.id_place})"
 
 
 class User(db.Model):
