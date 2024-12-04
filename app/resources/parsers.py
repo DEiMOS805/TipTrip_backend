@@ -133,9 +133,7 @@ def create_auth_user_parser() -> Namespace:
 
 def create_verify_user_parser() -> Namespace:
 	parser = reqparse.RequestParser()
-
 	parser.add_argument("mail", required=True, help="Mail field (str) required")
-
 	return parser.parse_args()
 
 
@@ -171,16 +169,17 @@ def create_post_coordinates_parser() -> Namespace:
 
 def create_speech_recognition_model_parser() -> Namespace:
 	parser = reqparse.RequestParser()
-
 	parser.add_argument("audio", required=True, help="Audio field (str) required")
-
 	return parser.parse_args()
 
 
 def create_agent_model_parser() -> Namespace:
 	parser = reqparse.RequestParser()
-
 	parser.add_argument("prompt", required=True, help="Prompt field (str) required")
-	parser.add_argument("tts", required=True, type=bool, help="Tts field (boolean) required")
+	return parser.parse_args()
 
+
+def create_tts_model_parser() -> Namespace:
+	parser = reqparse.RequestParser()
+	parser.add_argument("text", required=True, help="Text field (str) required")
 	return parser.parse_args()

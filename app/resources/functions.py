@@ -91,7 +91,8 @@ def format_text(text: str) -> str:
 	text = sub(r"\b([\w\-]+ punto [\w\-]+(?: punto [\w\-]+)?)(/.*)?\b(/)?", r"\1", text)
 
 	# Replace more special characters
-	text = text.replace(':', " dos puntos ") \
+	text = text \
+		.replace(':', ',') \
 		.replace('*', "") \
 		.replace(';', "") \
 		.replace('=', "") \

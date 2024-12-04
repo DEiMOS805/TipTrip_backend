@@ -8,9 +8,9 @@ from flask_restful.reqparse import Namespace
 from flask import Blueprint, Response, make_response, jsonify
 
 from app.resources.config import *
+from app.resources.parsers import *
 from app.resources.agent import agente
 from app.resources.functions import speech_recognition, tts_func
-from app.resources.parsers import create_speech_recognition_model_parser, create_agent_model_parser
 
 
 logger: Logger = getLogger(f"{PROJECT_NAME}.model_blueprint")
@@ -94,24 +94,10 @@ class Agent(Resource):
 
 		logger.debug("Procesing prompt with agent model...")
 		try:
-			result: dict = {
-				"text": agente.consultar_agente(pregunta=args["prompt"], user_id=id),
-			}
+			text: str = agente.consultar_agente(pregunta=args["prompt"], user_id=id)
 
 		except Exception as e:
 			logger.error(f"Error generating agent response {e}.\nAborting request...")
-			return make_response(jsonify({
-				"status": "Failed",
-				"message": GENERAL_ERROR_MESSAGE,
-				"error_code": "TT.500"
-			}), 500)
-
-		try:
-			if args["tts"]:
-				result["audio_data"] = tts_func(result["text"])
-
-		except Exception as e:
-			logger.error(f"Error during tts process: {e}.\nAborting request...")
 			return make_response(jsonify({
 				"status": "Failed",
 				"message": GENERAL_ERROR_MESSAGE,
@@ -122,9 +108,39 @@ class Agent(Resource):
 		return make_response(jsonify({
 			"status": "Success",
 			"message": "Agent response process completed successfully",
-			"agent_response": result
+			"text": text
 		}), 201)
 
 
-api.add_resource(SpeechRecognition, "/asr")
+class TTS(Resource):
+	@jwt_required()
+	def post(self) -> Response:
+		logger.debug(f"Starting tts process...")
+
+		logger.debug("Checking request data...")
+		args: Namespace = create_tts_model_parser()
+
+		logger.debug("Procesing text with TTS model...")
+
+		try:
+			audio_data: dict = tts_func(args["text"])
+
+		except Exception as e:
+			logger.error(f"Error during tts process: {e}.\nAborting request...")
+			return make_response(jsonify({
+				"status": "Failed",
+				"message": GENERAL_ERROR_MESSAGE,
+				"error_code": "TT.500"
+			}), 500)
+
+		logger.info("TTS process completed successfully")
+		return make_response(jsonify({
+			"status": "Success",
+			"message": "TTS process completed successfully",
+			"audio_data": audio_data
+		}), 201)
+
+
+api.add_resource(TTS, "/tts")
 api.add_resource(Agent, "/agent/<int:id>")
+api.add_resource(SpeechRecognition, "/asr")
