@@ -77,7 +77,7 @@ class User(db.Model):
 	longitude = db.Column(db.Float, default=None)
 	created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-	favorites = db.relationship("Favorite", backref="user", lazy=True)
+	favorites = db.relationship("Favorite", backref="user", lazy=True, cascade="all, delete-orphan")
 
 	def __repr__(self) -> str:
 		return f"User(username={self.username})"
