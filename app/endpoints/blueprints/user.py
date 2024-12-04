@@ -445,7 +445,7 @@ class UserAuth(Resource):
 
 
 class UserVerify(Resource):
-	def get(self) -> Response:
+	def post(self) -> Response:
 		logger.debug("Verifying user existence...")
 
 		logger.debug("Checking request data...")
@@ -496,7 +496,7 @@ class UserVerify(Resource):
 		logger.debug("Returning success message...")
 		return make_response(jsonify({
 			"status": "Success",
-			"message": "User authenticated successfully",
+			"message": "User verified successfully",
 			"id": user.id,
 			"token": access_token
 		}), 201)

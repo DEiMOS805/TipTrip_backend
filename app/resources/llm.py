@@ -15,7 +15,6 @@ from langchain_experimental.agents.agent_toolkits import create_csv_agent
 
 from app.resources.config import *
 from app.resources.models import User
-from app.resources.config import CATEGORIAS, DEFAULT_KM_RATIUS
 
 
 logger: Logger = getLogger(f"{PROJECT_NAME}.llm")
@@ -47,7 +46,7 @@ class AgenteConversacional:
 			handle_parsing_errors=True
 		)
 
-	def normalizar_texto(self, texto) -> str:
+	def normalizar_texto(self, texto: str) -> str:
 		texto = texto.lower()
 		texto = unicodedata.normalize('NFD', texto).encode('ascii', 'ignore').decode('utf-8')
 		return texto
@@ -119,7 +118,7 @@ class AgenteConversacional:
 		Mensaje: "{mensaje}"
 		"""
 		response = self.llm.invoke(prompt_intencion)
-		logger.debug(f"Intención detectada por LLM: {response.content}")  # Depuración
+		logger.debug(f"Intención detectada por LLM: {response.content}")
 
 		return response.content.strip().lower()
 
@@ -140,21 +139,19 @@ class AgenteConversacional:
 		"""
 		response = self.llm.invoke(prompt)
 		categoria = response.content.strip()
+
 		# Validar que la categoría esté en la lista conocida
-		if categoria in CATEGORIAS:
-			return categoria
-		else:
-			return None
+		return categoria if categoria in CATEGORIAS else None
 
 	def determinar_lugar_referencia_difflib(self, mensaje):
 		""" Utiliza difflib para determinar a qué lugar del dataset se refiere el mensaje del usuario. """
-		mensaje_normalizado = self.normalizar_texto(mensaje)
+		mensaje_normalizado: str = self.normalizar_texto(mensaje)
 		nombres_lugares = self.df['name'].dropna().unique().tolist()
-		nombres_normalizados = [self.normalizar_texto(nombre) for nombre in nombres_lugares]
+		nombres_normalizados: list[str] = [self.normalizar_texto(nombre) for nombre in nombres_lugares]
 
 		# Extraer palabras significativas del mensaje
 		palabras_mensaje = set(mensaje_normalizado.split())
-		posibles_lugares = []
+		posibles_lugares: list = []
 		for nombre, nombre_norm in zip(nombres_lugares, nombres_normalizados):
 			palabras_nombre = set(nombre_norm.split())
 			if palabras_mensaje & palabras_nombre:
@@ -162,14 +159,14 @@ class AgenteConversacional:
 
 		if posibles_lugares:
 			# Buscar la mejor coincidencia
-			mejor_coincidencia = difflib.get_close_matches(mensaje_normalizado, [self.normalizar_texto(lugar) for lugar in posibles_lugares], n=1, cutoff=0.5)
+			mejor_coincidencia: list[str] = difflib.get_close_matches(mensaje_normalizado, [self.normalizar_texto(lugar) for lugar in posibles_lugares], n=1, cutoff=0.5)
 			if mejor_coincidencia:
-				indice = [self.normalizar_texto(lugar) for lugar in posibles_lugares].index(mejor_coincidencia[0])
+				indice: int = [self.normalizar_texto(lugar) for lugar in posibles_lugares].index(mejor_coincidencia[0])
 				return posibles_lugares[indice]
 
 		return None
 
-	def obtener_coordenadas_lugar(self, nombre_lugar):
+	def obtener_coordenadas_lugar(self, nombre_lugar) -> tuple:
 		""" Obtiene las coordenadas (latitud y longitud) de un lugar dado su nombre. """
 		lugar = self.df[self.df['name'].str.lower() == nombre_lugar.lower()]
 		if not lugar.empty:
@@ -179,15 +176,25 @@ class AgenteConversacional:
 		else:
 			return None, None
 
+	def extraer_numero(self, texto) -> Optional[float]:
+		"""Extrae un número (distancia) del texto proporcionado."""
+		import re
+		numeros: list = re.findall(r'\d+\.?\d*', texto)
+
+		return float(numeros[0]) if numeros else None
+
 	# ---------------------------- UBICACION --------------------------------------
-	def recomendar_sitios_cercanos(self, lat, lon, radio_km) -> str:
+	def recomendar_sitios_cercanos(self, lat, lon, radio_km=None) -> str:
 		sitios_cercanos = self.df.dropna(subset=['latitude', 'longitude']).copy()
 		sitios_cercanos['distancia'] = sitios_cercanos.apply(
 			lambda row: self.calcular_distancia_geopy(lat, lon, row['latitude'], row['longitude']),
 			axis=1
 		)
 
-		sitios_cercanos = sitios_cercanos[sitios_cercanos['distancia'] <= radio_km].sort_values(by='distancia')
+		if radio_km is not None:
+			sitios_cercanos = sitios_cercanos[sitios_cercanos['distancia'] <= radio_km]
+
+		sitios_cercanos = sitios_cercanos.sort_values(by='distancia')
 
 		if sitios_cercanos.empty:
 			return "Lo siento, no encontré sitios turísticos en el radio especificado."
@@ -195,58 +202,81 @@ class AgenteConversacional:
 		recomendacion = "Te recomiendo los siguientes lugares cercanos a tu ubicación:\n"
 		for _, row in sitios_cercanos.iterrows():
 			recomendacion += f"- {row['name']} a {row['distancia']:.2f} km\n"
-
 		return recomendacion
 
 	# ---------------------------- LUGARES POR CATEGORIA -----------------------------
-	def recomendar_sitios_cercanos_categoria(self, lat, lon, radio_km, categoria) -> str:
-		""" Recomienda sitios cercanos a una ubicación específica y de una categoría dada. """
+	def recomendar_sitios_cercanos_categoria(self, lat, lon, radio_km=None, categoria=None) -> str:
 		sitios_cercanos: DataFrame = self.df.dropna(subset=['latitude', 'longitude']).copy()
-		sitios_cercanos = sitios_cercanos[sitios_cercanos['classification'].str.contains(categoria, case=False, na=False)]
+
+		# Filtrar por categoría si se proporciona
+		if categoria:
+			sitios_cercanos = sitios_cercanos[sitios_cercanos['classification'].str.contains(categoria, case=False, na=False)]
+
 		sitios_cercanos['distancia'] = sitios_cercanos.apply(
 			lambda row: self.calcular_distancia_geopy(lat, lon, row['latitude'], row['longitude']),
 			axis=1
 		)
-		sitios_cercanos = sitios_cercanos[sitios_cercanos['distancia'] <= radio_km].sort_values(by='distancia')
+
+		if radio_km is not None:
+			sitios_cercanos = sitios_cercanos[sitios_cercanos['distancia'] <= radio_km]
+
+		sitios_cercanos = sitios_cercanos.sort_values(by='distancia')
 
 		if sitios_cercanos.empty:
-			return f"Lo siento, no encontré sitios de la categoría '{categoria}' en el radio especificado."
+			if categoria:
+				return f"Lo siento, no encontré sitios de la categoría '{categoria}' en el radio especificado."
+			else:
+				return "Lo siento, no encontré sitios turísticos en el radio especificado."
 
-		recomendacion: str = f"Te recomiendo los siguientes lugares de la categoría '{categoria}' cercanos a tu ubicación:\n"
+		if categoria:
+			recomendacion = f"Te recomiendo los siguientes lugares de la categoría '{categoria}' cercanos a tu ubicación:\n"
+		else:
+			recomendacion = "Te recomiendo los siguientes lugares cercanos a tu ubicación:\n"
 
 		for _, row in sitios_cercanos.iterrows():
-			recomendacion += f"- {row['name']} a {row['distancia']:.2f} km \n{row['foto_1']}\n{row['punctuation']}\n {row['description']} \n\n"
+			recomendacion += f"- {row['name']} a {row['distancia']:.2f} km\n"
 
 		return recomendacion
 
 	def manejar_ubicacion_cercana(self, mensaje, user_id) -> str:
-		""" Maneja la intención 'ubicacion_cercana'. """
+		"""Maneja la intención 'ubicacion_cercana'."""
 		# Usar el LLM para determinar la categoría
 		categoria = self.determinar_categoria_llm(mensaje)
 		if categoria:
-			try:
-				lat, lon = self.obtener_ubicacion_usuario(user_id=user_id)
-				if lat is not None and lon is not None:
-					return self.recomendar_sitios_cercanos_categoria(lat, lon, DEFAULT_KM_RATIUS, categoria)
+			distancia: Optional[float] = self.extraer_numero(mensaje)
+			if distancia is not None:
+				try:
+					lat, lon = self.obtener_ubicacion_usuario(user_id=user_id)
+					if lat is not None and lon is not None:
+						return self.recomendar_sitios_cercanos_categoria(lat, lon, distancia, categoria)
 
-				else:
-					return "No se pudo obtener la ubicación del usuario."
+					else:
+						return "No se pudo obtener la ubicación del usuario."
 
-			except ValueError:
-				return "Por favor, ingresa coordenadas válidas y un número para el radio de búsqueda."
+				except ValueError:
+					return "Por favor, ingresa coordenadas válidas y un número para el radio de búsqueda."
+
+			else:
+				self.esperando_respuesta = True
+				self.contexto_pendiente = 'solicitar_distancia_categoria'
+				self.categoria_pendiente = categoria
+				return f"¿Deseas que busque {categoria}s en una distancia específica? Por favor, indícame la distancia en kilómetros, o escribe 'todos' para mostrarte todos los {categoria}s sin filtrar por distancia."
 
 		else:
 			return "Lo siento, no pude determinar la categoría de sitio que te interesa. Por favor, especifica una categoría como 'Museo', 'Monumento', 'Centro cultural', etc."
 
 	#----------------------------- LUGARES POR REFERENCIA --------------------------------
-	def manejar_lugares_referencia(self, mensaje):
-		""" Maneja la intención 'lugares_referencia'. """
+	def manejar_lugares_referencia(self, mensaje) -> str:
+		"""Maneja la intención 'lugares_referencia'."""
 		lugar_referencia = self.determinar_lugar_referencia_difflib(mensaje)
 		if lugar_referencia:
 			try:
 				lat_ref, lon_ref = self.obtener_coordenadas_lugar(lugar_referencia)
 				if lat_ref is not None and lon_ref is not None:
-					return self.recomendar_sitios_cercanos(lat_ref, lon_ref, DEFAULT_KM_RATIUS)
+					radio_km: Optional[float] = self.extraer_numero(mensaje)
+					if radio_km is None:
+						radio_km = DEFAULT_KM_RATIUS
+					return self.recomendar_sitios_cercanos(lat_ref, lon_ref, radio_km)
 
 				else:
 					return f"No pude encontrar la ubicación de {lugar_referencia}."
@@ -257,11 +287,74 @@ class AgenteConversacional:
 		else:
 			return "Por favor, especifica un lugar de referencia."
 
+	def manejar_respuesta_pendiente(self, respuesta_usuario, user_id) -> str:
+			if self.contexto_pendiente == 'solicitar_distancia':
+				distancia: Optional[float] = self.extraer_numero(respuesta_usuario)
+				if distancia is not None:
+					self.esperando_respuesta = False
+					self.contexto_pendiente = None
+					lat, lon = self.obtener_ubicacion_usuario(user_id=user_id)
+					if lat is not None and lon is not None:
+						return self.recomendar_sitios_cercanos(lat, lon, distancia)
+
+					else:
+						return "No se pudo obtener la ubicación del usuario."
+
+				elif 'todos' in respuesta_usuario.lower():
+					self.esperando_respuesta = False
+					self.contexto_pendiente = None
+					lat, lon = self.obtener_ubicacion_usuario(user_id=user_id)
+					if lat is not None and lon is not None:
+						return self.recomendar_sitios_cercanos(lat, lon)
+
+					else:
+						return "No se pudo obtener la ubicación del usuario."
+
+				else:
+					return "Por favor, indica una distancia en kilómetros para buscar lugares cercanos, o escribe 'todos' para mostrarte todos los lugares sin filtrar por distancia."
+
+			elif self.contexto_pendiente == 'solicitar_distancia_categoria':
+				distancia = self.extraer_numero(respuesta_usuario)
+				categoria = self.categoria_pendiente
+				if distancia is not None:
+					self.esperando_respuesta = False
+					self.contexto_pendiente = None
+					self.categoria_pendiente = None
+					lat, lon = self.obtener_ubicacion_usuario(user_id=user_id)
+					if lat is not None and lon is not None:
+						return self.recomendar_sitios_cercanos_categoria(lat, lon, distancia, categoria)
+
+					else:
+						return "No se pudo obtener la ubicación del usuario."
+
+				elif 'todos' in respuesta_usuario.lower():
+					self.esperando_respuesta = False
+					self.contexto_pendiente = None
+					self.categoria_pendiente = None
+					lat, lon = self.obtener_ubicacion_usuario(user_id=user_id)
+					if lat is not None and lon is not None:
+						return self.recomendar_sitios_cercanos_categoria(lat, lon, categoria=categoria)
+					else:
+						return "No se pudo obtener la ubicación del usuario."
+
+				else:
+					return f"Por favor, indica una distancia en kilómetros para buscar {categoria}s cercanos, o escribe 'todos' para mostrarte todos los {categoria}s sin filtrar por distancia."
+
+			else:
+				self.esperando_respuesta = False
+				self.contexto_pendiente = None
+				return "Lo siento, no entendí tu respuesta. ¿Podrías intentarlo de nuevo?"
+
 	# --------------------------------- AGENTE --------------------------------------
 	def consultar_agente(self, pregunta: str, user_id: int, radio_km: int = 7) -> str:
 		if self.error_count >= MAX_ERROR_COUNT:
 			return "Lo siento, por el momento no puedo ayudarte. Por favor, intenta de nuevo más tarde."
 
+		# Verificar si estamos esperando una respuesta
+		if self.esperando_respuesta:
+			return self.manejar_respuesta_pendiente(pregunta, user_id)
+
+		# Corregir errores ortográficos si lo deseas
 		pregunta_corregida: str = pregunta
 		intencion: str = self.analizar_intencion_llm(pregunta_corregida)
 
@@ -272,20 +365,19 @@ class AgenteConversacional:
 			return "Gracias por usar TripBot. ¡Espero que tengas un excelente día! 😊"
 
 		elif intencion == 'ubicacion':
-			lat, lon = self.obtener_ubicacion_usuario(user_id=user_id)
-			if lat is not None and lon is not None:
-				try:
-					if 1 <= radio_km <= 15:
-						return self.recomendar_sitios_cercanos(lat, lon, radio_km)
+			distancia: Optional[float] = self.extraer_numero(pregunta_corregida)
+			if distancia is not None:
+				lat, lon = self.obtener_ubicacion_usuario(user_id=user_id)
+				if lat is not None and lon is not None:
+					return self.recomendar_sitios_cercanos(lat, lon, distancia)
 
-					else:
-						return "Por favor, ingresa un radio de búsqueda entre 1 y 15 kilómetros."
-
-				except ValueError:
-					return "Por favor, ingresa un valor numérico válido para el radio de búsqueda."
+				else:
+					return "No se pudo obtener la ubicación del usuario."
 
 			else:
-				return "No se pudo obtener la ubicación del usuario."
+				self.esperando_respuesta = True
+				self.contexto_pendiente = 'solicitar_distancia'
+				return "¿Deseas que busque lugares en una distancia específica? Por favor, indícame la distancia en kilómetros, o escribe 'todos' para mostrarte todos los lugares sin filtrar por distancia."
 
 		elif intencion == 'ubicacion_cercana':
 			return self.manejar_ubicacion_cercana(pregunta_corregida, user_id)
@@ -317,6 +409,7 @@ class AgenteConversacional:
 				response = self.llm.invoke(prompt_template_informacion)
 				self.error_count = 0
 				return response.content.strip()
+
 			except Exception as e:
 				return self.manejar_errores(e)
 

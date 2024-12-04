@@ -464,6 +464,18 @@ swagger_template: dict[str, Any] = {
 						"in": "path",
 						"schema": { "type": "integer", "format": "int64", "example": 1 }
 					},
+					{
+						"name": "current_latitude",
+						"required": False,
+						"in": "body",
+						"schema": { "type": "integer", "format": "float", "example": 19.4326 }
+					},
+					{
+						"name": "current_longitude",
+						"required": False,
+						"in": "body",
+						"schema": { "type": "integer", "format": "float", "example": -99.1332 }
+					}
 				],
 				"responses": {
 					"200": {
@@ -825,6 +837,20 @@ swagger_template: dict[str, Any] = {
 				"tags": ["Favorites"],
 				"summary": "Retrieves all favorite places saved by all users",
 				"description": "Retrieves all favorite places saved by all users.",
+				"parameters": [
+					{
+						"name": "current_latitude",
+						"required": False,
+						"in": "body",
+						"schema": { "type": "integer", "format": "float", "example": 19.4326 }
+					},
+					{
+						"name": "current_longitude",
+						"required": False,
+						"in": "body",
+						"schema": { "type": "integer", "format": "float", "example": -99.1332 }
+					}
+				],
 				"responses": {
 					"200": {
 						"description": "All favorites places retrieved successfully",
@@ -989,6 +1015,18 @@ swagger_template: dict[str, Any] = {
 						"in": "path",
 						"schema": { "type": "number", "format": "int64", "example": 1 }
 					},
+					{
+						"name": "current_latitude",
+						"required": False,
+						"in": "body",
+						"schema": { "type": "integer", "format": "float", "example": 19.4326 }
+					},
+					{
+						"name": "current_longitude",
+						"required": False,
+						"in": "body",
+						"schema": { "type": "integer", "format": "float", "example": -99.1332 }
+					}
 				],
 				"responses": {
 					"200": {
@@ -1350,6 +1388,68 @@ swagger_template: dict[str, Any] = {
 				}
 			}
 		},
+		"/users/verify": {
+			"post": {
+				"tags": ["Users"],
+				"summary": "Checks if a user exists",
+				"description": "Checks if a user exists with the provided mail.",
+				"parameters": [
+					{
+						"name": "mail",
+						"required": True,
+						"in": "body",
+						"schema": { "type": "string", "example": "example@example.com" }
+					},
+				],
+				"responses": {
+					"201": {
+						"description": "User verified successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Success" },
+										"message": { "type": "string", "example": "User verified successfully" },
+										"id": { "type": "integer", "format": "int64", "example": 1 },
+										"token": { "type": "string", "example": "eyJhbGciOi ... kasjdhkHFGJHF " }
+									}
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "User not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Failed" },
+										"message": { "type": "string", "example": "User not found" }
+									}
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Internal Server Error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Failed" },
+										"message": { "type": "string", "example": GENERAL_ERROR_MESSAGE },
+										"error_code": { "type": "string", "example": "TT.500" }
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
 		"/users/{id}": {
 			"get": {
 				"tags": ["Users"],
@@ -1374,6 +1474,72 @@ swagger_template: dict[str, Any] = {
 										"status": { "type": "string", "example": "Success" },
 										"message": { "type": "string", "example": "User retrieved successfully" },
 										"user": { "$ref": "#/components/schemas/User" }
+									}
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "User not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Failed" },
+										"message": { "type": "string", "example": "User not found" }
+									}
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Internal Server Error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Failed" },
+										"message": { "type": "string", "example": GENERAL_ERROR_MESSAGE },
+										"error_code": { "type": "string", "example": "TT.500" }
+									}
+								}
+							}
+						}
+					}
+				},
+				"security": [{ "bearerAuth": [] }]
+			},
+			"post": {
+				"tags": ["Users"],
+				"summary": "Stores the current coordinates of a user",
+				"description": "Stores the current coordinates of a user by its ID.",
+				"parameters": [
+					{
+						"name": "current_latitude",
+						"required": False,
+						"in": "body",
+						"schema": { "type": "integer", "format": "float", "example": 19.4326 }
+					},
+					{
+						"name": "current_longitude",
+						"required": False,
+						"in": "body",
+						"schema": { "type": "integer", "format": "float", "example": -99.1332 }
+					}
+				],
+				"responses": {
+					"201": {
+						"description": "User coordinates stored successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Success" },
+										"message": { "type": "string", "example": "User coordinates stored successfully" },
+										"id": { "type": "integer", "format": "int64", "example": 1 }
 									}
 								}
 							}
@@ -1617,7 +1783,7 @@ swagger_template: dict[str, Any] = {
 			"post": {
 				"tags": ["Models"],
 				"summary": "Generates a text response by an AI agent",
-				"description": "Generates an audio response from a given prompt using both artificial intelligence's LLM and TTS models.",
+				"description": "Generates an audio response from a given prompt using an artificial intelligence's LLM model.",
 				"parameters": [
 					{
 						"name": "prompt",
@@ -1636,6 +1802,54 @@ swagger_template: dict[str, Any] = {
 									"properties": {
 										"status": { "type": "string", "example": "Success" },
 										"message": { "type": "string", "example": "Agent response process completed successfully" },
+										"text" : { "type": "string", "example": "The app has 100 turistic places" }
+									}
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Internal Server Error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Failed" },
+										"message": { "type": "string", "example": GENERAL_ERROR_MESSAGE },
+										"error_code": { "type": "string", "example": "TT.500" }
+									}
+								}
+							}
+						}
+					}
+				},
+				"security": [{ "bearerAuth": [] }]
+			}
+		},
+		"models/tts": {
+			"post": {
+				"tags": ["Models"],
+				"summary": "Generates an audio from a given text",
+				"description": "Generates an audio from a given text using a text-to-speech artificial intelligence model",
+				"parameters": [
+					{
+						"name": "text",
+						"required": True,
+						"in": "body",
+						"schema": { "type": "string", "example": "Palacio de Bellas Artes theather is..." }
+					}
+				],
+				"responses": {
+					"201": {
+						"description": "TTS process completed successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"status": { "type": "string", "example": "Success" },
+										"message": { "type": "string", "example": "TTS process completed successfully" },
 										"audio_data" : {
 											"type": "object",
 											"properties": {
