@@ -33,6 +33,9 @@ class AgenteConversacional:
 		self.prompt_template: str = PROMPT_TEMPLATE
 		self.error_count: int = 0
 		self.lugares_mostrados = set()  # Registro de lugares ya mostrados
+		self.esperando_respuesta = False
+		self.contexto_pendiente = None
+		self.categoria_pendiente = None
 
 		# Configuración del agente
 		self.agent_executor = create_csv_agent(
