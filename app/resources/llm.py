@@ -94,26 +94,27 @@ class AgenteConversacional:
 	# ---------------------------- INTENCIONES --------------------------------------
 	def analizar_intencion_llm(self, mensaje: str) -> str:
 		logger.debug("Analizando la intención del usuario...")
-		prompt_intencion: str = f"""
-		Analiza el siguiente mensaje y responde con una palabra clave que describa su intención, basándote en las siguientes categorías:
+		prompt_intencion = f"""
+		Analiza el siguiente mensaje, este mensaje solo tiene que ver con el turismo en la Ciudad de México y responde con una palabra clave que describa su intención:
+
+		- Responde: 'ubicacion', Si el mensaje trata que quiere saber de sitios cercanos al usuario y no menciona la categoría, nombre de algún sitio
+			Ejemplos de preguntas: Qué lugares hay cerca de mí, Qué me queda cerca, Qué es lo más cercano a mí, Qué lugares hay cerca de mi ubicación actual.
+
+		- Responde: 'ubicacion_cercana', Si el mensaje trata que quiere saber de sitios cercanos al usuario y menciona que quiere saber con respecto a alguna categoría en especial
+			Ejemplos de preguntas: Recomiéndame zonas arqueológicas cerca de mí, ¿Cuál es la iglesia más cercana a mi ubicación?, ¿Qué planetario me queda cerca?, ¿Qué museos me quedan cerca?, ¿Qué centros culturales están por mi zona?
+
+		- Responde: 'lugares_referencia', Si el mensaje trata que quiere saber de sitios cercanos a otros sitios y menciona que quiere saber
+			Ejemplos de preguntas: ¿Qué lugares hay cerca del Zócalo?, ¿Qué lugares hay cerca del Ángel?
+
+		- Responde: 'informacion_general', Si el mensaje es alucibo a información turística general como museos, estatuas, esculturas, murales, arquitectura, centros culturales, zonas arqueológicas, jardines, iglesias o centros religiosos, nombres de esos sitios, agradecimientos por la información, dar indicaciones de ubicación, horarios, reseñas, historia, horarios,
+			Ejemplos de preguntas: ¿Qué es Acroyoga?, ¿Qué me puedes decir sobre Acroyoga, Pan y Circo?, ¿Hay visitas nocturnas en el Castillo de Chapultepec?, ¿Qué me recomiendas de esculturas?, ¿Cuál es el museo mejor calificado?, ¿Cuántos museos hay en la Ciudad?, ¿Cuántos museos conoces?, ¿Cuál es la calle del museo Soumaya?, dirección del angel de independencia, etc.
+								- por donde queda bellas artes?
 
 		- Responde: 'saludo', Si el mensaje es un saludo o muestra intención de iniciar una conversación.
 			Ejemplos de mensajes: hola, buenos días, ¿cómo estás?, ¿qué tal?, etc.
 
 		- Responde: 'despedida', Si el mensaje es una despedida o indica que la conversación está terminando.
 			Ejemplos de mensajes: adiós, hasta luego, gracias por tu ayuda, nos vemos, etc.
-
-		- Responde: 'ubicacion', Si el mensaje trata que quiere saber de sitios cercanos al usuario y no menciona la categoría, nombre de algún sitio.
-			Ejemplos de preguntas: Qué lugares hay cerca de mí, Qué me queda cerca, Qué es lo más cercano a mí, Qué lugares hay cerca de mi ubicación actual.
-
-		- Responde: 'ubicacion_cercana', Si el mensaje trata que quiere saber de sitios cercanos al usuario y menciona que quiere saber con respecto a alguna categoría en especial.
-			Ejemplos de preguntas: Recomiéndame zonas arqueológicas cerca de mí, ¿Cuál es la iglesia más cercana a mi ubicación?, ¿Qué planetario me queda cerca?, ¿Qué museos me quedan cerca?, ¿Qué centros culturales están por mi zona?
-
-		- Responde: 'lugares_referencia', Si el mensaje trata que quiere saber de sitios cercanos a otros sitios y menciona que quiere saber.
-			Ejemplos de preguntas: ¿Qué lugares hay cerca del Zócalo?, ¿Qué lugares hay cerca del Ángel?
-
-		- Responde: 'informacion_general', Si el mensaje trata sobre información turística general como museos, estatuas, esculturas, murales, arquitectura, centros culturales, zonas arqueológicas, jardines, iglesias o centros religiosos, nombres de esos sitios, agradecimientos por la información.
-			Ejemplos de preguntas: ¿Qué es Acroyoga?, ¿Qué me puedes decir sobre Acroyoga, Pan y Circo?, ¿Hay visitas nocturnas en el Castillo de Chapultepec?, ¿Qué me recomiendas de esculturas?, ¿Cuál es el museo mejor calificado?, ¿Cuántos museos hay en la Ciudad?, etc.
 
 		- Responde: 'irrelevante', Si el mensaje no tiene que ver con los temas anteriores.
 			Ejemplos de preguntas: ¿Qué es Python?, ¿Qué es la ESCOM?, ¿Qué son las matemáticas?, ¿Qué es la contabilidad?, etc.
@@ -127,11 +128,9 @@ class AgenteConversacional:
 
 	# ---------------------------- FUNCIONES AUXILIARES --------------------------------------
 	def obtener_lista_lugares(self):
-		""" Obtiene la lista de nombres de lugares únicos del dataset. """
 		return self.df['name'].dropna().unique().tolist()
 
 	def determinar_categoria_llm(self, mensaje):
-		""" Utiliza un LLM para determinar la categoría del mensaje del usuario. """
 		prompt: str = f"""
 		Dada la siguiente lista de categorías o clasificaciones:
 		{', '.join(CATEGORIAS)}
@@ -188,6 +187,9 @@ class AgenteConversacional:
 
 	# ---------------------------- UBICACION --------------------------------------
 	def recomendar_sitios_cercanos(self, lat, lon, radio_km=None) -> str:
+		if 'latitude' not in self.df.columns or 'longitude' not in self.df.columns:
+			return "Datos de ubicación no disponibles."
+
 		sitios_cercanos = self.df.dropna(subset=['latitude', 'longitude']).copy()
 		sitios_cercanos['distancia'] = sitios_cercanos.apply(
 			lambda row: self.calcular_distancia_geopy(lat, lon, row['latitude'], row['longitude']),
@@ -209,9 +211,11 @@ class AgenteConversacional:
 
 	# ---------------------------- LUGARES POR CATEGORIA -----------------------------
 	def recomendar_sitios_cercanos_categoria(self, lat, lon, radio_km=None, categoria=None) -> str:
+		if 'latitude' not in self.df.columns or 'longitude' not in self.df.columns:
+			return "Datos de ubicación no disponibles."
+
 		sitios_cercanos: DataFrame = self.df.dropna(subset=['latitude', 'longitude']).copy()
 
-		# Filtrar por categoría si se proporciona
 		if categoria:
 			sitios_cercanos = sitios_cercanos[sitios_cercanos['classification'].str.contains(categoria, case=False, na=False)]
 
@@ -242,8 +246,6 @@ class AgenteConversacional:
 		return recomendacion
 
 	def manejar_ubicacion_cercana(self, mensaje, user_id) -> str:
-		"""Maneja la intención 'ubicacion_cercana'."""
-		# Usar el LLM para determinar la categoría
 		categoria = self.determinar_categoria_llm(mensaje)
 		if categoria:
 			distancia: Optional[float] = self.extraer_numero(mensaje)
@@ -258,7 +260,6 @@ class AgenteConversacional:
 
 				except ValueError:
 					return "Por favor, ingresa coordenadas válidas y un número para el radio de búsqueda."
-
 			else:
 				self.esperando_respuesta = True
 				self.contexto_pendiente = 'solicitar_distancia_categoria'
@@ -270,7 +271,6 @@ class AgenteConversacional:
 
 	#----------------------------- LUGARES POR REFERENCIA --------------------------------
 	def manejar_lugares_referencia(self, mensaje) -> str:
-		"""Maneja la intención 'lugares_referencia'."""
 		lugar_referencia = self.determinar_lugar_referencia_difflib(mensaje)
 		if lugar_referencia:
 			try:
@@ -314,7 +314,9 @@ class AgenteConversacional:
 						return "No se pudo obtener la ubicación del usuario."
 
 				else:
-					return "Por favor, indica una distancia en kilómetros para buscar lugares cercanos, o escribe 'todos' para mostrarte todos los lugares sin filtrar por distancia."
+					self.esperando_respuesta = False
+					self.contexto_pendiente = None
+					return self.consultar_agente(respuesta_usuario)
 
 			elif self.contexto_pendiente == 'solicitar_distancia_categoria':
 				distancia = self.extraer_numero(respuesta_usuario)
@@ -341,7 +343,10 @@ class AgenteConversacional:
 						return "No se pudo obtener la ubicación del usuario."
 
 				else:
-					return f"Por favor, indica una distancia en kilómetros para buscar {categoria}s cercanos, o escribe 'todos' para mostrarte todos los {categoria}s sin filtrar por distancia."
+					self.esperando_respuesta = False
+					self.contexto_pendiente = None
+					self.categoria_pendiente = None
+					return self.consultar_agente(respuesta_usuario)
 
 			else:
 				self.esperando_respuesta = False
@@ -357,9 +362,7 @@ class AgenteConversacional:
 		if self.esperando_respuesta:
 			return self.manejar_respuesta_pendiente(pregunta, user_id)
 
-		# Corregir errores ortográficos si lo deseas
-		pregunta_corregida: str = pregunta
-		intencion: str = self.analizar_intencion_llm(pregunta_corregida)
+		intencion: str = self.analizar_intencion_llm(pregunta)
 
 		if intencion == 'saludo':
 			return "¡Hola! ¿En qué puedo ayudarte hoy con información turística sobre la Ciudad de México?"
@@ -368,7 +371,7 @@ class AgenteConversacional:
 			return "Gracias por usar TripBot. ¡Espero que tengas un excelente día! 😊"
 
 		elif intencion == 'ubicacion':
-			distancia: Optional[float] = self.extraer_numero(pregunta_corregida)
+			distancia: Optional[float] = self.extraer_numero(pregunta)
 			if distancia is not None:
 				lat, lon = self.obtener_ubicacion_usuario(user_id=user_id)
 				if lat is not None and lon is not None:
@@ -383,32 +386,30 @@ class AgenteConversacional:
 				return "¿Deseas que busque lugares en una distancia específica? Por favor, indícame la distancia en kilómetros, o escribe 'todos' para mostrarte todos los lugares sin filtrar por distancia."
 
 		elif intencion == 'ubicacion_cercana':
-			return self.manejar_ubicacion_cercana(pregunta_corregida, user_id)
+			return self.manejar_ubicacion_cercana(pregunta, user_id)
 
 		elif intencion == 'lugares_referencia':
-			return self.manejar_lugares_referencia(pregunta_corregida)
+			return self.manejar_lugares_referencia(pregunta)
 
 		elif intencion == 'informacion_general':
 			try:
-				# Filtrar resultados que contengan palabras clave de la pregunta
 				palabras_clave: list[str] = pregunta.lower().split()
 				resultados: DataFrame = self.df[self.df['description'].str.contains('|'.join(palabras_clave), case=False, na=False)]
 
-				# Si no hay datos, responde adecuadamente
 				if resultados.empty:
 					return "Lo siento, no tengo información específica sobre ese tema, pero puedo recomendarte lugares turísticos en la Ciudad de México."
 
 				prompt_template_informacion: str = f"""
-				Eres un guía turístico experto y apasionado, especializado en brindar información sobre destinos turísticos de la Ciudad de México. Tu tono debe ser amable, entusiasta y profesional.
+				Eres un guía turístico experto, especializado en brindar información sobre destinos turísticos de la Ciudad de México. Tu tono debe ser amable, entusiasta y profesional.
 				Tu objetivo es ofrecer información, datos precisos, datos interesantes y brindar una buena experiencia.
 				Usa un lenguaje inclusivo y acogedor, manteniendo siempre una actitud servicial y paciente. Si la consulta está fuera de tu ámbito, guía al usuario amablemente hacia los temas que puedes abordar.
 
 				Pregunta del usuario: "{pregunta}"
-				Responde al usuario de manera informativa y útil.
+
+				Responde al usuario de manera informativa y útil. hazlo con un máximo de 100 palabras
 				"""
 				logger.debug("Construyendo respuesta...")
 
-				# Generar la respuesta usando el LLM
 				response = self.llm.invoke(prompt_template_informacion)
 				self.error_count = 0
 				return response.content.strip()

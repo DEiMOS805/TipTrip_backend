@@ -142,6 +142,10 @@ class PlaceList(Resource):
 			logger.debug("Sorting places by distance...")
 			result.sort(key=lambda place: place["distance"])
 
+		else:
+			for place in result:
+				place["distance"] = None
+
 		logger.info("Checking favorite places...")
 		logger.debug("Checking if user exists...")
 		user_id: int = get_jwt()["sub"]["id"]

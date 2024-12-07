@@ -96,6 +96,8 @@ def format_text(text: str) -> str:
 		.replace('*', "") \
 		.replace(';', "") \
 		.replace('=', "") \
+		.replace('¡', "") \
+		.replace('!', "") \
 		.replace('(', "").replace(')', "") \
 		.replace('[', "").replace(']', "") \
 		.replace('{', "").replace('}', "") \
