@@ -32,6 +32,7 @@ TEXT_REPLACEMENTS: dict[str, str] = {
 # Project paths
 PROJECT_DIR_ABSPATH: str = getcwd()
 DOTENV_ABSPATH: str = join(PROJECT_DIR_ABSPATH, ".env")
+TEMP_ABSPATH: str = join(PROJECT_DIR_ABSPATH, "app", "temp")
 RESOURCES_ABSPATH: str = join(PROJECT_DIR_ABSPATH, "app", "resources")
 STATIC_ABSPATH: str = join(PROJECT_DIR_ABSPATH, "app", "static")
 VOSK_ABSPATH: str = join(STATIC_ABSPATH, "vosk-model-small-es-0.42")

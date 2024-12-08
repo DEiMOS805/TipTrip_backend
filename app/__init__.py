@@ -19,6 +19,7 @@ from app.resources.swagger_template import swagger_template
 
 from app.endpoints.home import Home
 from app.endpoints.download import Download
+from app.endpoints.blueprints.logs import log_blueprint
 from app.endpoints.blueprints.user import user_blueprint
 from app.endpoints.blueprints.place import place_blueprint
 from app.endpoints.blueprints.models import model_blueprint
@@ -118,6 +119,7 @@ def create_app() -> Flask:
 	api.add_resource(Home, '/')
 	api.add_resource(Download, "/download/<string:os>")
 
+	app.register_blueprint(log_blueprint, url_prefix="/logs")
 	app.register_blueprint(user_blueprint, url_prefix="/users")
 	app.register_blueprint(place_blueprint, url_prefix="/places")
 	app.register_blueprint(model_blueprint, url_prefix="/models")

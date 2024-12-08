@@ -25,7 +25,7 @@ class Download(Resource):
 			else:
 				filename: str = "tiptrip.ipa"
 
-			logger.debug(f"Sending installer file {filename} to the client...")
+			logger.info(f"Sending installer file {filename} to the client...")
 			return send_from_directory(STATIC_ABSPATH, filename, as_attachment=True)
 
 		except Exception as e:

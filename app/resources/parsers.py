@@ -183,3 +183,15 @@ def create_tts_model_parser() -> Namespace:
 	parser = reqparse.RequestParser()
 	parser.add_argument("text", required=True, help="Text field (str) required")
 	return parser.parse_args()
+
+###############################################################################
+########################## Logs Blueprints Parsers ############################
+###############################################################################
+
+def create_post_log_parser() -> Namespace:
+	parser = reqparse.RequestParser()
+
+	parser.add_argument("user_id", type=int, required=True, help="User_id field (int) required")
+	parser.add_argument("file", required=True, help="File field (str) required")
+
+	return parser.parse_args()
